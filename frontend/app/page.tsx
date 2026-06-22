@@ -292,52 +292,77 @@ const Home = () => {
           justify="center"
           id="text"
         >
-          <Title ta={"center"} visibleFrom="md" order={1} id="title" lh={"1.5"}>
-            Chess{" "}
-            <Paper
-              bg="var(--primary)"
-              display={"inline"}
-              c={"var(--background)"}
-              px={"xs"}
+          <Stack align="center" justify="center" gap={"xs"}>
+            <Title
+              ta={"center"}
+              visibleFrom="md"
+              order={1}
+              id="title"
+              lh={"1.1"}
             >
-              hub
-            </Paper>
-          </Title>
-          <Title ta={"center"} hiddenFrom="md" order={1} id="title" lh={"1.5"}>
-            Chess{" "}
-            <Paper
-              bg="var(--primary)"
-              display={"inline"}
-              c={"var(--background)"}
-              px={"xs"}
+              Chess{" "}
+              <Paper
+                bg="var(--primary)"
+                display={"inline"}
+                c={"var(--background)"}
+                px={"xs"}
+              >
+                hub
+              </Paper>
+            </Title>
+            <Title
+              ta={"center"}
+              hiddenFrom="md"
+              order={1}
+              id="title"
+              lh={"1.1"}
             >
-              hub
-            </Paper>
-          </Title>
+              Chess{" "}
+              <Paper
+                bg="var(--primary)"
+                display={"inline"}
+                c={"var(--background)"}
+                px={"xs"}
+              >
+                hub
+              </Paper>
+            </Title>
 
-          <Title ta={"center"} visibleFrom="md" order={1} id="title" lh={"1.5"}>
-            Never Forget Your{" "}
-            <Paper
-              bg="var(--primary)"
-              display={"inline"}
-              c={"var(--background)"}
-              px={"xs"}
+            <Title
+              ta={"center"}
+              visibleFrom="md"
+              order={1}
+              id="title"
+              lh={"1.1"}
             >
-              Openings
-            </Paper>
-          </Title>
-          <Title ta={"center"} hiddenFrom="md" order={1} id="title" lh={"1.5"}>
-            Never Forget Your{" "}
-            <Paper
-              bg="var(--primary)"
-              display={"inline"}
-              c={"var(--background)"}
-              px={"xs"}
+              Never Forget Your{" "}
+              <Paper
+                bg="var(--primary)"
+                display={"inline"}
+                c={"var(--background)"}
+                px={"xs"}
+              >
+                Openings
+              </Paper>
+            </Title>
+            <Title
+              ta={"center"}
+              hiddenFrom="md"
+              order={1}
+              id="title"
+              lh={"1.1"}
             >
-              Openings
-            </Paper>
-          </Title>
-
+              Never Forget Your{" "}
+              <Paper
+                bg="var(--primary)"
+                display={"inline"}
+                c={"var(--background)"}
+                px={"xs"}
+              >
+                Openings
+              </Paper>
+            </Title>
+          </Stack>
           <Text
             ta={"center"}
             hiddenFrom="md"

@@ -7,7 +7,7 @@ const matchApi = new MatchApi();
 
 const useGetActiveMatches = (payload: {}) => {
   const query = useQuery({
-    queryKey: ["players"],
+    queryKey: ["active-matches"],
     queryFn: async () => await matchApi.getActiveMatches(payload),
     refetchInterval: 5_000, // every 5 seconds
   });
