@@ -42,6 +42,7 @@
 
 [data-mantine-color-scheme="light"] body {
   --mantine-color-body: #ffffff !important;
+  --background: #ffffff !important;
   --text: #000000 !important;
   --primary: #fca311 !important;
   --secondary: #567ccf !important;
@@ -50,6 +51,7 @@
 
 [data-mantine-color-scheme="dark"] body {
   --mantine-color-body: #000000 !important;
+  --background: #000000 !important;
   --primary: #fca311 !important; /* Prussian Blue */
   --secondary: #14213d !important; /* Alabaster Grey */
   --accent: #fca311 !important; /* Orange */

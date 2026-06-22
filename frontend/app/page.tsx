@@ -12,6 +12,7 @@ import {
   Highlight,
   Mark,
   Marquee,
+  Paper,
   Stack,
   Text,
   Title,
@@ -285,17 +286,56 @@ const Home = () => {
       <Stack align="center">
         <Stack
           align="center"
-          maw={600}
+          maw={700}
           w={"80%"}
           h={"calc(100vh - 130px)"}
           justify="center"
           id="text"
         >
           <Title ta={"center"} visibleFrom="md" order={1} id="title" lh={"1.5"}>
-            Never Forget Your <Mark color="primary">Openings</Mark>
+            Chess{" "}
+            <Paper
+              bg="var(--primary)"
+              display={"inline"}
+              c={"var(--background)"}
+              px={"xs"}
+            >
+              hub
+            </Paper>
           </Title>
           <Title ta={"center"} hiddenFrom="md" order={1} id="title" lh={"1.5"}>
-            Never Forget Your <Mark color="primary">Openings</Mark>
+            Chess{" "}
+            <Paper
+              bg="var(--primary)"
+              display={"inline"}
+              c={"var(--background)"}
+              px={"xs"}
+            >
+              hub
+            </Paper>
+          </Title>
+
+          <Title ta={"center"} visibleFrom="md" order={1} id="title" lh={"1.5"}>
+            Never Forget Your{" "}
+            <Paper
+              bg="var(--primary)"
+              display={"inline"}
+              c={"var(--background)"}
+              px={"xs"}
+            >
+              Openings
+            </Paper>
+          </Title>
+          <Title ta={"center"} hiddenFrom="md" order={1} id="title" lh={"1.5"}>
+            Never Forget Your{" "}
+            <Paper
+              bg="var(--primary)"
+              display={"inline"}
+              c={"var(--background)"}
+              px={"xs"}
+            >
+              Openings
+            </Paper>
           </Title>
 
           <Text
