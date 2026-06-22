@@ -158,8 +158,8 @@ export default function Board({
 
   let whiteKing = referee.findKing("WHITE");
   let blackKing = referee.findKing("BLACK");
-  // const isWhiteChecked = referee.isChecked("WHITE");
-  // const isBlackChecked = referee.isChecked("BLACK");
+  const isWhiteChecked = referee.isChecked("WHITE");
+  const isBlackChecked = referee.isChecked("BLACK");
 
   for (let i = 0; i < chessBoard.length; i++) {
     list.push([]);
@@ -167,9 +167,9 @@ export default function Board({
       const piece = chessBoard[i][j];
       let squareColor: string;
 
-      if (whiteKing.x === i && whiteKing.y === j && false) {
+      if (whiteKing.x === i && whiteKing.y === j && isWhiteChecked) {
         squareColor = "bg-red-700";
-      } else if (blackKing.x === i && blackKing.y === j && false) {
+      } else if (blackKing.x === i && blackKing.y === j && isBlackChecked) {
         squareColor = "bg-red-700";
       } else if (!correctPlacements) {
         squareColor = (i + j) % 2 ? "bg-(--primary)" : "bg-(--secondary)";
