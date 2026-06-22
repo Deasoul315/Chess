@@ -216,16 +216,19 @@ export class MatchController {
       logger.info("[GET_ACTIVE_ROOMS] Fetching active rooms");
 
       const rooms = [];
+      const seenCodes = new Set();
 
       for (const [key, connection] of connections) {
         if (connection.master) {
           const code = connection.code;
-          const host = connection.master.hostPlayer.username;
-          const guest = connection.master.guestPlayer.username;
+
+          if (seenCodes.has(code)) continue;
+          seenCodes.add(code);
+
           rooms.push({
             code,
-            host,
-            guest,
+            host: connection.master.hostPlayer.username,
+            guest: connection.master.guestPlayer.username,
           });
         }
       }

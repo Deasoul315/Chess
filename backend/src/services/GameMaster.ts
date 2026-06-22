@@ -130,6 +130,7 @@ export class GameMaster {
         increment: this.increment,
       });
       this._guestRegisterTime = Date.now();
+      this._hostRegisterTime = Date.now();
       this._guestTime = this._guestTime - elapsedTime + this._increment;
     } else {
       const elapsedTime = Date.now() - this._hostRegisterTime;
@@ -139,6 +140,7 @@ export class GameMaster {
         elapsedTime,
         increment: this._increment,
       });
+      this._guestRegisterTime = Date.now();
       this._hostRegisterTime = Date.now();
       this._hostTime = this._hostTime - elapsedTime + this._increment;
     }

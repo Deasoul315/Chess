@@ -973,63 +973,65 @@ export default function Lobby() {
         <Grid.Col span={{ base: 12, lg: 6 }}>
           <Center>
             <Stack>
-              <Flex
-                p={"xs"}
-                justify={"space-between"}
-                style={{
-                  background:
-                    "linear-gradient(90deg,rgba(252, 163, 17, 0.01) 0%, rgba(252, 163, 17, 1) 25%, rgba(252, 163, 17, 1) 50%, rgba(252, 163, 17, 1) 75%, rgba(252, 163, 17, 0.01) 100%)",
-                }}
-              >
-                {match.value.winner ? (
-                  <Text size="lg" c={"var(--text)"}>
-                    {`${match.value.winner === "HOST" ? match.value.hostName : match.value.guestName}`}{" "}
-                    has won the game
-                  </Text>
-                ) : (
-                  <Flex justify={"space-between"} w={"100%"}>
-                    <Flex>
-                      <Text size="lg" c={"var(--text)"}>
-                        {user.value.userName === match.value.hostName &&
-                        match.value.role === "PLAYER"
-                          ? "YOU: "
-                          : "OPPONENT: "}
-                      </Text>
-                      <Text
-                        size="lg"
-                        c={
-                          match.value.teamInTurn === "HOST"
-                            ? "green"
-                            : "var(--text)"
-                        }
-                      >
-                        {match.value.hostName}
-                      </Text>
-                    </Flex>
+              {match.value.teamInTurn && (
+                <Flex
+                  p={"xs"}
+                  justify={"space-between"}
+                  style={{
+                    background:
+                      "linear-gradient(90deg,rgba(252, 163, 17, 0.01) 0%, rgba(252, 163, 17, 1) 25%, rgba(252, 163, 17, 1) 50%, rgba(252, 163, 17, 1) 75%, rgba(252, 163, 17, 0.01) 100%)",
+                  }}
+                >
+                  {match.value.winner ? (
                     <Text size="lg" c={"var(--text)"}>
-                      VS
+                      {`${match.value.winner === "HOST" ? match.value.hostName : match.value.guestName}`}{" "}
+                      has won the game
                     </Text>
-                    <Flex>
+                  ) : (
+                    <Flex justify={"space-between"} w={"100%"}>
+                      <Flex>
+                        <Text size="lg" c={"var(--text)"}>
+                          {user.value.userName === match.value.hostName &&
+                          match.value.role === "PLAYER"
+                            ? "YOU: "
+                            : "OPPONENT: "}
+                        </Text>
+                        <Text
+                          size="lg"
+                          c={
+                            match.value.teamInTurn === "HOST"
+                              ? "green"
+                              : "var(--text)"
+                          }
+                        >
+                          {match.value.hostName}
+                        </Text>
+                      </Flex>
                       <Text size="lg" c={"var(--text)"}>
-                        {user.value.userName === match.value.guestName &&
-                        match.value.role === "PLAYER"
-                          ? "YOU: "
-                          : "OPPONENT: "}
+                        VS
                       </Text>
-                      <Text
-                        size="lg"
-                        c={
-                          match.value.teamInTurn === "GUEST"
-                            ? "green"
-                            : "var(--text)"
-                        }
-                      >
-                        {match.value.guestName}
-                      </Text>
+                      <Flex>
+                        <Text size="lg" c={"var(--text)"}>
+                          {user.value.userName === match.value.guestName &&
+                          match.value.role === "PLAYER"
+                            ? "YOU: "
+                            : "OPPONENT: "}
+                        </Text>
+                        <Text
+                          size="lg"
+                          c={
+                            match.value.teamInTurn === "GUEST"
+                              ? "green"
+                              : "var(--text)"
+                          }
+                        >
+                          {match.value.guestName}
+                        </Text>
+                      </Flex>
                     </Flex>
-                  </Flex>
-                )}
-              </Flex>
+                  )}
+                </Flex>
+              )}
 
               <Board
                 chessBoard={match.value.board}
