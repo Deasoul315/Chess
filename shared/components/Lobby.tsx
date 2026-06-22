@@ -11,6 +11,7 @@ import {
   Group,
   LoadingOverlay,
   Modal,
+  Paper,
   ScrollArea,
   Slider,
   Stack,
@@ -966,82 +967,141 @@ export default function Lobby() {
           {view === "spectate" && <Spectate setIsGameStart={setIsGameStart} />}
         </Modal>
       </div>
-      <Text>
-        {match.value.winner
-          ? `Game Ended with ${match.value.winner} victory`
-          : `${match.value.teamInTurn} starts first`}
-      </Text>
       <Grid>
         <Grid.Col span={{ base: 12, lg: 3 }}></Grid.Col>
         <Grid.Col span={{ base: 12, lg: 6 }}>
           <Center>
-            <Board
-              chessBoard={match.value.board}
-              team={
-                match.value.hostName === user.value.userName ? "WHITE" : "BLACK"
-              }
-              update={(fromX, fromY, toX, toY) => {
-                if (
-                  match.value.socket &&
-                  match.value.socket.readyState === WebSocket.OPEN
-                ) {
-                  match.value.socket.send(
-                    JSON.stringify({
-                      type: "PLAY",
-                      userName: user.value.userName,
-                      fromX: fromX,
-                      fromY: fromY,
-                      toX: toX,
-                      toY: toY,
-                    }),
-                  );
+            <Stack>
+              <Flex
+                p={"xs"}
+                justify={"space-between"}
+                style={{
+                  background:
+                    "linear-gradient(90deg,rgba(252, 163, 17, 0.01) 0%, rgba(252, 163, 17, 1) 25%, rgba(252, 163, 17, 1) 50%, rgba(252, 163, 17, 1) 75%, rgba(252, 163, 17, 0.01) 100%)",
+                }}
+              >
+                {match.value.winner ? (
+                  <Text size="lg" c={"var(--text)"}>
+                    {`${match.value.winner === "HOST" ? match.value.hostName : match.value.guestName}`}{" "}
+                    has won the game
+                  </Text>
+                ) : (
+                  <Flex justify={"space-between"} w={"100%"}>
+                    <Flex>
+                      <Text size="lg" c={"var(--text)"}>
+                        {user.value.userName === match.value.hostName &&
+                        match.value.role === "PLAYER"
+                          ? "YOU: "
+                          : "OPPONENT: "}
+                      </Text>
+                      <Text
+                        size="lg"
+                        c={
+                          match.value.teamInTurn === "HOST"
+                            ? "green"
+                            : "var(--text)"
+                        }
+                      >
+                        {match.value.hostName}
+                      </Text>
+                    </Flex>
+                    <Text size="lg" c={"var(--text)"}>
+                      VS
+                    </Text>
+                    <Flex>
+                      <Text size="lg" c={"var(--text)"}>
+                        {user.value.userName === match.value.guestName &&
+                        match.value.role === "PLAYER"
+                          ? "YOU: "
+                          : "OPPONENT: "}
+                      </Text>
+                      <Text
+                        size="lg"
+                        c={
+                          match.value.teamInTurn === "GUEST"
+                            ? "green"
+                            : "var(--text)"
+                        }
+                      >
+                        {match.value.guestName}
+                      </Text>
+                    </Flex>
+                  </Flex>
+                )}
+              </Flex>
+
+              <Board
+                chessBoard={match.value.board}
+                team={
+                  match.value.hostName === user.value.userName
+                    ? "WHITE"
+                    : "BLACK"
                 }
-              }}
-            ></Board>
+                update={(fromX, fromY, toX, toY) => {
+                  if (
+                    match.value.socket &&
+                    match.value.socket.readyState === WebSocket.OPEN
+                  ) {
+                    match.value.socket.send(
+                      JSON.stringify({
+                        type: "PLAY",
+                        userName: user.value.userName,
+                        fromX: fromX,
+                        fromY: fromY,
+                        toX: toX,
+                        toY: toY,
+                      }),
+                    );
+                  }
+                }}
+              ></Board>
+            </Stack>
           </Center>
         </Grid.Col>
         <Grid.Col span={{ base: 12, lg: 3 }}>
           <Center>
             <Stack>
               {match.value.time.guest && match.value.time.host && (
-                <Grid>
-                  <Grid.Col span={{ base: 12 }}>
-                    <Stack>
-                      <Text size="lg">Host</Text>
-                      <Timer
-                        time={match.value.time.host}
-                        updaterFn={(time: number) => {
-                          if (match.value.teamInTurn === "GUEST") return;
-                          match.dispatch({
-                            type: "UPDATE_TIME",
-                            params: {
-                              host: (match.value.time.host ?? 0) - time,
-                              guest: match.value.time.guest ?? 0,
-                            },
-                          });
-                        }}
-                      ></Timer>
-                    </Stack>
-                  </Grid.Col>
-                  <Grid.Col span={{ base: 12 }}>
-                    <Stack>
-                      <Text size="lg">Guest</Text>
-                      <Timer
-                        time={match.value.time.guest}
-                        updaterFn={(time: number) => {
-                          if (match.value.teamInTurn === "HOST") return;
-                          match.dispatch({
-                            type: "UPDATE_TIME",
-                            params: {
-                              host: match.value.time.host ?? 0,
-                              guest: (match.value.time.guest ?? 0) - time,
-                            },
-                          });
-                        }}
-                      ></Timer>
-                    </Stack>
-                  </Grid.Col>
-                </Grid>
+                <Paper bg={"var(--secondary"} p={"xs"}>
+                  <Grid>
+                    <Grid.Col span={{ base: 6 }}>
+                      <Stack>
+                        <Title order={3}>Host</Title>
+                        <Timer
+                          time={match.value.time.host}
+                          updaterFn={(time: number) => {
+                            if (match.value.teamInTurn === "GUEST") return;
+                            match.dispatch({
+                              type: "UPDATE_TIME",
+                              params: {
+                                host: (match.value.time.host ?? 0) - time,
+                                guest: match.value.time.guest ?? 0,
+                              },
+                            });
+                          }}
+                        ></Timer>
+                      </Stack>
+                    </Grid.Col>
+                    <Grid.Col span={{ base: 6 }}>
+                      <Stack>
+                        <Title order={3}>Guest</Title>
+                        <Timer
+                          time={match.value.time.guest}
+                          updaterFn={(time: number) => {
+                            if (match.value.teamInTurn === "HOST") return;
+                            match.dispatch({
+                              type: "UPDATE_TIME",
+                              params: {
+                                host: match.value.time.host ?? 0,
+                                guest: (match.value.time.guest ?? 0) - time,
+                              },
+                            });
+                          }}
+                        ></Timer>
+                      </Stack>
+                    </Grid.Col>
+                  </Grid>
+                </Paper>
               )}
               <Logger data={match.value.log}></Logger>
               <Chat messages={match.value.messages}></Chat>

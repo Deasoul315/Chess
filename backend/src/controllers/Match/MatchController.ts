@@ -178,8 +178,8 @@ export class MatchController {
           increment: hostConnection.increment,
           turnTime: hostConnection.time,
           code: hostConnection.code,
-          hostName: hostConnection.master?.hostPlayer.username,
-          guestName: hostConnection.master?.guestPlayer.username,
+          host: hostConnection.master?.hostPlayer.username,
+          guest: hostConnection.master?.guestPlayer.username,
           readyUsers: [
             hostConnection.master?.hostPlayer.username,
             hostConnection.master?.guestPlayer.username,
