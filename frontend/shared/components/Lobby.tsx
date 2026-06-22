@@ -930,6 +930,7 @@ export default function Lobby() {
     <>
       <div className="z-1 relative">
         <Modal
+          zIndex={50}
           opened={!isGameStart}
           onClose={() => {}}
           title="Lobby"

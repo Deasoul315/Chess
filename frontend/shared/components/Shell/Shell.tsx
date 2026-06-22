@@ -38,7 +38,13 @@ const Shell = ({ children }: { children: React.ReactNode }) => {
         collapsed: { mobile: true },
       }}
     >
-      <AppShell.Header display={"flex"} className="items-center">
+      <AppShell.Header
+        style={{
+          zIndex: 200,
+        }}
+        display={"flex"}
+        className="items-center"
+      >
         <NavBar
           logo={{ icon: "/logo.png", text: "Chess" }}
           form={
