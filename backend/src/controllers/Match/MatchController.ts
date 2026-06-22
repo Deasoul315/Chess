@@ -219,7 +219,7 @@ export class MatchController {
       const seenCodes = new Set();
 
       for (const [key, connection] of connections) {
-        if (connection.master) {
+        if (connection.master && !connection.master.winner) {
           const code = connection.code;
 
           if (seenCodes.has(code)) continue;
