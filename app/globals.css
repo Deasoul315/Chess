@@ -1,0 +1,57 @@
+@import "tailwindcss";
+
+@theme inline {
+  /* --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono); */
+
+  /* COLORS */
+  --color-text: #fffbff;
+  --color-background: #000500;
+  --color-primary: #362417;
+  --color-secondary: #92817a;
+  --color-accent: #f1dabf;
+}
+
+/* 
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: #0a0a0a;
+    --foreground: #ededed;
+  }
+} */
+
+:root {
+  --primary: #fca311; /* Prussian Blue */
+  --secondary: #14213d; /* Alabaster Grey */
+  --accent: #fca311; /* Orange */
+  --text: #ffffff; /* Black */
+  --background: #000000; /* White */
+
+  --header-1: 48px;
+  --header-2: 40px;
+  --header-3: 32px;
+  --header-4: 24px;
+
+  --text-lg: 20px;
+
+  --bold: 900;
+  --semi-bold: 700;
+}
+
+[data-mantine-color-scheme="light"] body {
+  --mantine-color-body: #ffffff !important;
+  --text: #000000 !important;
+  --primary: #fca311 !important;
+  --secondary: #567ccf !important;
+  --accent: #fca311 !important;
+}
+
+[data-mantine-color-scheme="dark"] body {
+  --mantine-color-body: #000000 !important;
+  --primary: #fca311 !important; /* Prussian Blue */
+  --secondary: #14213d !important; /* Alabaster Grey */
+  --accent: #fca311 !important; /* Orange */
+  --text: #ffffff !important; /* Black */
+}
