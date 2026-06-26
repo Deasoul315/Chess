@@ -5,27 +5,30 @@ import express from "express";
 import cors from "cors";
 import { router } from "./routers/router";
 import { PORT } from "./config/config";
-import { wss } from "./lib/websocket";
-
+import http from "node:http";
+import { makeSocketServer } from "./lib/websocket";
 const app = express();
-
-app.use(express.json());
 
 app.use(
   cors({
-    origin: [
-      "http://localhost:3000",
-      "http://127.0.0.1:3000",
-      "http://192.168.1.8:3000",
-    ],
+    origin: ["http://localhost:3000", "http://localhost:3000/dashboard"],
   }),
 );
-let x = wss;
+app.use(express.json());
+
 app.use(router);
 
-app.listen(PORT, () => {
-  console.log("listening...");
+// create HTTP server manually
+const server = http.createServer(app);
+
+// attach websocket to the same server
+
+const wss = makeSocketServer(server);
+
+server.listen(PORT, "0.0.0.0", () => {
+  console.log(`listening on ${PORT}`);
 });
+
 export default app;
 
 // class User {

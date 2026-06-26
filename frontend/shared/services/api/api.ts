@@ -68,6 +68,9 @@ export class ScoreApi {
 
     const response = await fetch(`${API}/daily-stats?${params.toString()}`, {
       method: "GET",
+      headers: {
+        "ngrok-skip-browser-warning": "true",
+      },
     });
 
     if (!response.ok) {
@@ -83,6 +86,9 @@ export class ScoreApi {
 
     const response = await fetch(`${API}/score?${params.toString()}`, {
       method: "GET",
+      headers: {
+        "ngrok-skip-browser-warning": "true",
+      },
     });
 
     if (!response.ok) {
@@ -99,6 +105,9 @@ export class ScoreApi {
 
     const response = await fetch(`${API}/history?${params.toString()}`, {
       method: "GET",
+      headers: {
+        "ngrok-skip-browser-warning": "true",
+      },
     });
 
     if (!response.ok) {
@@ -111,6 +120,9 @@ export class ScoreApi {
   public async getLeaderboard() {
     const response = await fetch(`${API}/leaderboard`, {
       method: "GET",
+      headers: {
+        "ngrok-skip-browser-warning": "true",
+      },
     });
 
     if (!response.ok) {
@@ -277,6 +289,7 @@ export class MatchApi {
       method: "GET",
       headers: {
         "Content-Type": "application/json",
+        "ngrok-skip-browser-warning": "true",
       },
     });
     if (!response.ok) {
@@ -294,6 +307,7 @@ export class MatchApi {
       method: "GET",
       headers: {
         "Content-Type": "application/json",
+        "ngrok-skip-browser-warning": "true",
       },
     });
     if (!response.ok) {

@@ -90,6 +90,7 @@ router.get("/history", (req, res) => {
 });
 
 router.get("/score", (req, res) => {
+  console.log("SCORE");
   const result = scoreSchema.safeParse(req.query);
   console.log(req.query);
   if (!result.success) {
@@ -103,6 +104,7 @@ router.get("/score", (req, res) => {
 });
 
 router.get("/daily-stats", (req, res) => {
+  console.log("DSCORE");
   const result = scoreSchema.safeParse(req.query);
 
   if (!result.success) {
@@ -116,6 +118,7 @@ router.get("/daily-stats", (req, res) => {
 });
 
 router.get("/leaderboard", (req, res) => {
+  console.log("LSCORE");
   const result = leaderboardSchema.safeParse(req.query);
 
   if (!result.success) {
