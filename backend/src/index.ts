@@ -11,7 +11,7 @@ const app = express();
 
 app.use(
   cors({
-    origin: ["http://localhost:3000", "http://localhost:3000/dashboard"],
+    origin: ["https://chess-silk-sigma.vercel.app"],
   }),
 );
 app.use(express.json());

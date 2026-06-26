@@ -184,7 +184,11 @@ export class MatchApi {
     increment: number;
     turnTime: number;
   }> {
-    const response = await fetch(`${API}/match/${payload.code}`);
+    const response = await fetch(`${API}/match/${payload.code}`, {
+      headers: {
+        "ngrok-skip-browser-warning": "true",
+      },
+    });
 
     if (!response.ok) {
       const error = await response.json();
@@ -246,7 +250,11 @@ export class MatchApi {
     increment: number;
     turnTime: number;
   }> {
-    const response = await fetch(`${API}/match/random/${payload.userName}`);
+    const response = await fetch(`${API}/match/random/${payload.userName}`, {
+      headers: {
+        "ngrok-skip-browser-warning": "true",
+      },
+    });
 
     if (!response.ok) {
       const error = await response.json();
