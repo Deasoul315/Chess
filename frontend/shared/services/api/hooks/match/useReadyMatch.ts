@@ -4,6 +4,7 @@ import { useUserDataContext } from "@/shared/contexts/UserData";
 import { MatchApi } from "../../api";
 import { useMatchContext } from "@/shared/contexts/Match";
 import { Domain, PieceColor } from "@/shared/constants/types";
+import { WS_URI } from "@/shared/config";
 
 const matchApi = new MatchApi();
 
@@ -25,12 +26,10 @@ export function useReadyMatch() {
       const { userName, hostName } = variables;
 
       if (userName !== hostName) return;
-      console.log("esablishing socket");
-      const socket = new WebSocket("ws://localhost:8080");
+      const socket = new WebSocket(WS_URI);
 
       socket.onmessage = (event) => {
         const message = JSON.parse(event.data);
-        console.log("message received ", message);
         switch (message.type) {
           case "MOVE_PIECE":
             const { fromX, fromY, toX, toY } = message;
@@ -40,39 +39,37 @@ export function useReadyMatch() {
             const isCastling =
               piece?.type === "KING" && Math.abs(toY - fromY) === 2;
 
+            const movements = [];
             if (isCastling) {
               // Queenside castling
               if (fromY - toY > 0) {
-                match.dispatch({
-                  type: "PLACE_PIECE",
-                  params: {
-                    fromX,
-                    fromY: 0,
-                    toX: fromX,
-                    toY: fromY - 1,
-                  },
+                movements.push({
+                  fromX,
+                  fromY: 0,
+                  toX: fromX,
+                  toY: fromY - 1,
                 });
               }
               // Kingside castling
               else {
-                match.dispatch({
-                  type: "PLACE_PIECE",
-                  params: {
-                    fromX,
-                    fromY: 7,
-                    toX: fromX,
-                    toY: fromY + 1,
-                  },
+                movements.push({
+                  fromX,
+                  fromY: 7,
+                  toX: fromX,
+                  toY: fromY + 1,
                 });
               }
             }
+            movements.push({
+              fromX: message.fromX,
+              fromY: message.fromY,
+              toX: message.toX,
+              toY: message.toY,
+            });
             match.dispatch({
-              type: "PLACE_PIECE",
+              type: "PLACE_PIECES",
               params: {
-                fromX: message.fromX,
-                fromY: message.fromY,
-                toX: message.toX,
-                toY: message.toY,
+                movements: movements,
               },
             });
             break;

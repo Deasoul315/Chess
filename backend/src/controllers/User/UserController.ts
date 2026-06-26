@@ -10,6 +10,7 @@ import {
 import { success } from "zod";
 import { badRequest } from "../../utilities/utilities";
 import { createAccessToken } from "../../lib/jwt";
+import { connections } from "../../store/global";
 
 export class UserController {
   public async post(data: CreateUserDTO, res: Response) {
@@ -113,6 +114,7 @@ export class UserController {
       }
 
       const token = createAccessToken(userData.id);
+      const connection = connections.get(userName);
 
       return res.status(200).json({
         success: true,

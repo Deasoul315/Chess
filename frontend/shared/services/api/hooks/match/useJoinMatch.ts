@@ -13,7 +13,6 @@ export function useJoinMatch() {
     mutationFn: async (payload: { code: string; guestName: string }) =>
       await matchApi.joinMatch(payload),
     onSuccess: (data, variables) => {
-      console.log("got from server ", data);
       match.dispatch({
         type: "CONFIGURE",
         params: {

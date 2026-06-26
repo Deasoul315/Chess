@@ -14,9 +14,24 @@ import {
   CheckIcon,
 } from "@mantine/core";
 import { useForm } from "@mantine/form";
-import { useState } from "react";
+import { useRouter } from "next/navigation";
+
+import { useEffect, useState } from "react";
 
 export default function Account() {
+  const router = useRouter();
+  const user = useUserDataContext();
+
+  useEffect(() => {
+    if (user.value.userName === "") {
+      router.replace("/Home");
+    }
+  }, [user, router]);
+
+  if (user.value.userName === "") {
+    return null;
+  }
+
   const userData = useUserDataContext();
   const mutation = useEditUser();
   const checkIcon = <CheckIcon size={20} />;
@@ -58,7 +73,7 @@ export default function Account() {
   return (
     <Container py="xl">
       <Paper shadow="sm" p="lg">
-        <Title order={1} mb="lg">
+        <Title order={1} mb="lg" fz={{ base: "h3", md: "h1" }}>
           Edit Profile
         </Title>
 
@@ -68,13 +83,29 @@ export default function Account() {
               label="Username"
               value={userData.value.userName}
               readOnly
+              size="md"
+              hiddenFrom="md"
               styles={{
                 label: {
-                  fontSize: "var(--text-lg)",
                   fontWeight: "var(--bold)",
                 },
                 input: {
-                  fontSize: "var(--text-lg)",
+                  fontWeight: "var(--bold)",
+                },
+              }}
+            />
+
+            <TextInput
+              label="Username"
+              value={userData.value.userName}
+              readOnly
+              size="lg"
+              visibleFrom="md"
+              styles={{
+                label: {
+                  fontWeight: "var(--bold)",
+                },
+                input: {
                   fontWeight: "var(--bold)",
                 },
               }}
@@ -84,43 +115,93 @@ export default function Account() {
               label="Name"
               placeholder="Enter your name"
               {...form.getInputProps("name")}
+              size="md"
+              hiddenFrom="md"
               styles={{
                 label: {
-                  fontSize: "var(--text-lg)",
                   fontWeight: "var(--bold)",
                 },
                 input: {
-                  fontSize: "var(--text-lg)",
                   fontWeight: "var(--bold)",
                 },
               }}
             />
+
+            <TextInput
+              label="Name"
+              placeholder="Enter your name"
+              {...form.getInputProps("name")}
+              size="lg"
+              visibleFrom="md"
+              styles={{
+                label: {
+                  fontWeight: "var(--bold)",
+                },
+                input: {
+                  fontWeight: "var(--bold)",
+                },
+              }}
+            />
+
             <PasswordInput
               label="Old Password"
               placeholder="Leave empty to keep current password"
               {...form.getInputProps("oldPassword")}
+              size="md"
+              hiddenFrom="md"
               styles={{
                 label: {
-                  fontSize: "var(--text-lg)",
                   fontWeight: "var(--bold)",
                 },
                 input: {
-                  fontSize: "var(--text-lg)",
                   fontWeight: "var(--bold)",
                 },
               }}
             />
+
+            <PasswordInput
+              label="Old Password"
+              placeholder="Leave empty to keep current password"
+              {...form.getInputProps("oldPassword")}
+              size="lg"
+              visibleFrom="md"
+              styles={{
+                label: {
+                  fontWeight: "var(--bold)",
+                },
+                input: {
+                  fontWeight: "var(--bold)",
+                },
+              }}
+            />
+
             <PasswordInput
               label="New Password"
               placeholder="Leave empty to keep current password"
               {...form.getInputProps("newPassword")}
+              size="md"
+              hiddenFrom="md"
               styles={{
                 label: {
-                  fontSize: "var(--text-lg)",
                   fontWeight: "var(--bold)",
                 },
                 input: {
-                  fontSize: "var(--text-lg)",
+                  fontWeight: "var(--bold)",
+                },
+              }}
+            />
+
+            <PasswordInput
+              label="New Password"
+              placeholder="Leave empty to keep current password"
+              {...form.getInputProps("newPassword")}
+              size="lg"
+              visibleFrom="md"
+              styles={{
+                label: {
+                  fontWeight: "var(--bold)",
+                },
+                input: {
                   fontWeight: "var(--bold)",
                 },
               }}
@@ -130,18 +211,14 @@ export default function Account() {
               color="primary"
               type="submit"
               mt="sm"
-              styles={{
-                label: {
-                  fontSize: "var(--text-lg)",
-                  fontWeight: "var(--bold)",
-                },
-              }}
+              fz={{ base: "md", md: "lg" }}
             >
               Save Changes
             </Button>
           </Stack>
         </form>
       </Paper>
+
       {mutation.isSuccess && opened && (
         <Notification
           icon={checkIcon}

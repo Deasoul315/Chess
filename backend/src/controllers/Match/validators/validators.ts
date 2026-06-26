@@ -33,6 +33,10 @@ export const getRoomParamsSchema = z.object({
   code: z.string().min(1, "Invalid room code"),
 });
 
+export const getRoomByIdParamsSchema = z.object({
+  userName: z.string().min(1),
+});
+
 export const joinRoomSchema = z.object({
   code: z.string().min(1, "Invalid matchCode"),
   guestName: z.string().min(1, "Invalid guestName"),

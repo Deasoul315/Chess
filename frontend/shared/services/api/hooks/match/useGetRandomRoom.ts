@@ -7,7 +7,7 @@ const matchApi = new MatchApi();
 
 const useGetRandomRoom = (payload: { userName: string }) => {
   const query = useQuery({
-    queryKey: ["random-players"],
+    queryKey: ["random-players", payload.userName],
     queryFn: async () => await matchApi.getRandomMatch(payload),
     refetchInterval: 5_000, // every 5 seconds
     enabled: !!payload.userName,

@@ -12,6 +12,7 @@ import { useUserDataContext } from "../contexts/UserData";
 import { useCreateUser } from "../services/api/hooks/user/useCreateUser";
 import { useGetUser } from "../services/api/hooks/user/useGetUser";
 import { passwordRegex, userNameRegex } from "../constants/constants";
+import { useMediaQuery } from "@mantine/hooks";
 
 const UserSignInForm = () => {
   const userData = useUserDataContext();
@@ -60,14 +61,25 @@ const UserSignInForm = () => {
     setCredentials({ userName, password });
   }
 
+  const isMobile = useMediaQuery("(max-width: 768px)");
   return (
     <>
       {query.isSuccess && (
         <Stack align="center">
-          <Title order={4}>Sign in Complete!</Title>
-          <Text>Welcome {userData.value.name}</Text>
+          <Title order={5} hiddenFrom="md">
+            Sign in Complete!
+          </Title>
+
+          <Title order={4} visibleFrom="md">
+            Sign in Complete!
+          </Title>
+
+          <Text fz={{ base: "md", md: "lg" }}>
+            Welcome {userData.value.name}
+          </Text>
         </Stack>
       )}
+
       {!query.isSuccess && (
         <Stack>
           <form className="flex flex-col gap-3" onSubmit={(e) => submitUser(e)}>
@@ -76,48 +88,35 @@ const UserSignInForm = () => {
               label="Username"
               placeholder="username123"
               autoFocus
+              size={isMobile ? "md" : "lg"}
               styles={{
                 label: {
-                  fontSize: "var(--text-lg)",
                   fontWeight: "var(--bold)",
                 },
                 input: {
-                  fontSize: "var(--text-lg)",
                   fontWeight: "var(--bold)",
                 },
               }}
-            ></TextInput>
+            />
+
             <TextInput
-              styles={{
-                label: {
-                  fontSize: "var(--text-lg)",
-                  fontWeight: "var(--bold)",
-                },
-                input: {
-                  fontSize: "var(--text-lg)",
-                  fontWeight: "var(--bold)",
-                },
-              }}
               name="password"
               label="Password"
               placeholder="password"
-            ></TextInput>
+              size={isMobile ? "md" : "lg"}
+            />
 
             <Group flex={"flex"} justify="flex-end">
               <Button
                 type="submit"
                 color="var(--primary)"
-                styles={{
-                  label: {
-                    fontSize: "var(--text-lg)",
-                    fontWeight: "var(--bold)",
-                  },
-                }}
+                fz={{ base: "md", md: "lg" }}
               >
                 submit
               </Button>
             </Group>
           </form>
+
           {error && <Text c={"red"}>{error}</Text>}
           {query.isError && <Text c={"red"}>{query.error.message}</Text>}
         </Stack>

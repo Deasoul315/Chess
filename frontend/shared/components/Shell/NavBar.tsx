@@ -1,5 +1,6 @@
 "use client";
 
+import { useAppContext } from "@/shared/contexts/App";
 import { useUserDataContext } from "@/shared/contexts/UserData";
 import {
   ActionIcon,
@@ -36,9 +37,8 @@ const NavBar = ({
   const computedColorScheme = useComputedColorScheme("light", {
     getInitialValueInEffect: true,
   });
-  const [openedLoginModal, { open: openLoginModal, close: closeLoginModal }] =
-    useDisclosure(false);
   const userData = useUserDataContext();
+  const app = useAppContext();
   return (
     <div className="bg-(--primary) text-(--text) w-full h-full flex items-center px-2">
       <Flex justify={"space-between"} w={"100%"} align={"center"}>
@@ -64,9 +64,7 @@ const NavBar = ({
                 aria-label="Gradient action icon"
                 // gradient={{ from: "blue", to: "cyan", deg: 90 }}
                 bg={"red"}
-                onClick={() => {
-                  openLoginModal();
-                }}
+                onClick={app.didPressSignupOpenFn}
               >
                 <UserIcon size={30}></UserIcon>
               </ActionIcon>
@@ -108,15 +106,19 @@ const NavBar = ({
         </div>
       </Flex>
       <Modal
-        opened={openedLoginModal}
-        onClose={closeLoginModal}
-        title="Authentication"
-        styles={{
-          title: {
-            fontSize: "var(--header-3)",
-            fontWeight: "var(--bold)",
-          },
-        }}
+        opened={app.didPressSignup}
+        onClose={app.didPressSignupCloseFn}
+        title={
+          <>
+            <Text fz={"var(--header-4)"} hiddenFrom="md" fw="var(--bold)">
+              Authentication
+            </Text>
+
+            <Text fz={"var(--header-2)"} visibleFrom="md" fw="var(--bold)">
+              Authentication
+            </Text>
+          </>
+        }
       >
         {form}
       </Modal>

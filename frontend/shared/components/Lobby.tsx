@@ -3,6 +3,7 @@
 import React, { useEffect, useState } from "react";
 import {
   ActionIcon,
+  Box,
   Button,
   ButtonGroup,
   Center,
@@ -11,6 +12,7 @@ import {
   Group,
   LoadingOverlay,
   Modal,
+  Overlay,
   Paper,
   ScrollArea,
   Slider,
@@ -27,15 +29,18 @@ import { useUserDataContext } from "../contexts/UserData";
 import { Domain, PieceColor } from "../constants/types";
 import { useJoinMatch } from "../services/api/hooks/match/useJoinMatch";
 import { match } from "assert";
-import useGetRoom from "../services/api/hooks/match/useGetRoom";
 import { useReadyMatch } from "../services/api/hooks/match/useReadyMatch";
-import useGetRandomRoom from "../services/api/hooks/match/useGetRandomRoom";
+import useGetRoom from "../services/api/hooks/match/useGetRoom";
 import { useSpecateMatch } from "../services/api/hooks/match/useSpectateMatch";
+import useGetRandomRoom from "../services/api/hooks/match/useGetRandomRoom";
 import { useDisclosure } from "@mantine/hooks";
 import Logger from "./Logger";
-import Chat from "./Chat";
 import { useConfigMatch } from "../services/api/hooks/match/useConfigMatch";
+import Chat from "./Chat";
+import { useReconnectMatch } from "../services/api/hooks/match/useReconnectMatch";
 import Timer from "./Timer";
+import { useSearchParams } from "next/navigation";
+import { WS_URI } from "../config";
 
 type LobbyView =
   | "home"
@@ -115,14 +120,13 @@ function Room({
   const [isConfigure, setIsConfigure] = useState(false);
   const match = useMatchContext();
   const [configuration, setConfiguration] = useState<Configuration>({
-    turnTime: match.value.turnTime ? match.value.turnTime : 1 * 60 * 1000,
+    turnTime: match.value.turnTime ? match.value.turnTime : 5 * 60 * 1000,
     increment: match.value.increment ? match.value.increment : 3 * 1000,
     domain: match.value.domain ? match.value.domain : "PUBLIC",
     color: match.value.color ? match.value.color : "WHITE",
   });
   const userData = useUserDataContext();
   const mutation = useCreateMatch();
-  console.log("MUTATION ", mutation);
   const readyMutation = useReadyMatch();
   const configMutation = useConfigMatch();
   const uer = useUserDataContext();
@@ -140,15 +144,12 @@ function Room({
   }, [configMutation.isSuccess]);
 
   useEffect(() => {
-    console.log("mount");
-    console.log("no code");
     const params = {
       ...configuration,
       userName: userData.value.userName,
     };
     mutation.mutate(params);
   }, []);
-
   return (
     <>
       <Stack>
@@ -216,7 +217,7 @@ function Room({
                   userName: userData.value.userName,
                   guestName: match.value.guestName,
                   hostName: match.value.hostName,
-                  color: "WHITE",
+                  color: match.value.color,
                   domain: "PRIVATE",
                   increment: 3,
                   turnTime: 1,
@@ -394,20 +395,15 @@ function JoinRoom({
   const pollPlayers = useGetRoom({ code: match.value.code });
   const readyMutation = useReadyMatch();
   const [isReady, setIsReady] = useState(false);
-  console.log("rerender join", pollPlayers.data);
 
   useEffect(() => {
-    console.log("GAME STARTOOO");
-    console.log(pollPlayers.data);
     if (!pollPlayers.isSuccess || pollPlayers.data.state !== "READY") return;
     setIsGameStart(true);
     if (match.value.socket) return;
-    console.log("MAKE SOCKET");
-    const socket = new WebSocket("ws://localhost:8080");
+    const socket = new WebSocket(WS_URI);
 
     socket.onmessage = (event) => {
       const message = JSON.parse(event.data);
-      console.log("message received ", message);
       switch (message.type) {
         case "MOVE_PIECE":
           const { fromX, fromY, toX, toY } = message;
@@ -416,40 +412,37 @@ function JoinRoom({
 
           const isCastling =
             piece?.type === "KING" && Math.abs(toY - fromY) === 2;
-
+          const movements = [];
           if (isCastling) {
             // Queenside castling
             if (fromY - toY > 0) {
-              match.dispatch({
-                type: "PLACE_PIECE",
-                params: {
-                  fromX,
-                  fromY: 0,
-                  toX: fromX,
-                  toY: fromY - 1,
-                },
+              movements.push({
+                fromX,
+                fromY: 0,
+                toX: fromX,
+                toY: fromY - 1,
               });
             }
             // Kingside castling
             else {
-              match.dispatch({
-                type: "PLACE_PIECE",
-                params: {
-                  fromX,
-                  fromY: 7,
-                  toX: fromX,
-                  toY: fromY + 1,
-                },
+              movements.push({
+                fromX,
+                fromY: 7,
+                toX: fromX,
+                toY: fromY + 1,
               });
             }
           }
+          movements.push({
+            fromX: message.fromX,
+            fromY: message.fromY,
+            toX: message.toX,
+            toY: message.toY,
+          });
           match.dispatch({
-            type: "PLACE_PIECE",
+            type: "PLACE_PIECES",
             params: {
-              fromX: message.fromX,
-              fromY: message.fromY,
-              toX: message.toX,
-              toY: message.toY,
+              movements: movements,
             },
           });
           break;
@@ -631,14 +624,13 @@ function Matchmaking({
   const randomQuery = useGetRandomRoom({ userName: userData.value.userName });
   const match = useMatchContext();
   useEffect(() => {
-    if (!randomQuery.isSuccess) return;
+    if (!randomQuery.data) return;
     setIsGameStart(true);
 
-    const socket = new WebSocket("ws://localhost:8080");
+    const socket = new WebSocket(WS_URI);
 
     socket.onmessage = (event) => {
       const message = JSON.parse(event.data);
-      console.log("message received ", message);
       switch (message.type) {
         case "MOVE_PIECE":
           const { fromX, fromY, toX, toY } = message;
@@ -648,39 +640,37 @@ function Matchmaking({
           const isCastling =
             piece?.type === "KING" && Math.abs(toY - fromY) === 2;
 
+          const movements = [];
           if (isCastling) {
             // Queenside castling
             if (fromY - toY > 0) {
-              match.dispatch({
-                type: "PLACE_PIECE",
-                params: {
-                  fromX,
-                  fromY: 0,
-                  toX: fromX,
-                  toY: fromY - 1,
-                },
+              movements.push({
+                fromX,
+                fromY: 0,
+                toX: fromX,
+                toY: fromY - 1,
               });
             }
             // Kingside castling
             else {
-              match.dispatch({
-                type: "PLACE_PIECE",
-                params: {
-                  fromX,
-                  fromY: 7,
-                  toX: fromX,
-                  toY: fromY + 1,
-                },
+              movements.push({
+                fromX,
+                fromY: 7,
+                toX: fromX,
+                toY: fromY + 1,
               });
             }
           }
+          movements.push({
+            fromX: message.fromX,
+            fromY: message.fromY,
+            toX: message.toX,
+            toY: message.toY,
+          });
           match.dispatch({
-            type: "PLACE_PIECE",
+            type: "PLACE_PIECES",
             params: {
-              fromX: message.fromX,
-              fromY: message.fromY,
-              toX: message.toX,
-              toY: message.toY,
+              movements: movements,
             },
           });
           break;
@@ -716,7 +706,6 @@ function Matchmaking({
         }),
       );
     };
-    console.log("GOT RANDOM OF ", randomQuery.data);
     match.dispatch({
       type: "CONFIGURE",
       params: {
@@ -739,7 +728,8 @@ function Matchmaking({
         guestName: randomQuery.data.guestName ?? "",
       },
     });
-  }, [randomQuery.isSuccess]);
+  }, [randomQuery.data]);
+
   return (
     <Stack pos={"relative"} h={100}>
       <Title order={4}>Random Match Up</Title>
@@ -773,11 +763,10 @@ function Spectate({
   useEffect(() => {
     if (!spectateQuery.isSuccess) return;
     setIsGameStart(true);
-    const socket = new WebSocket("ws://localhost:8080");
+    const socket = new WebSocket(WS_URI);
 
     socket.onmessage = (event) => {
       const message = JSON.parse(event.data);
-      console.log("message received ", message);
       switch (message.type) {
         case "MOVE_PIECE":
           const { fromX, fromY, toX, toY } = message;
@@ -787,39 +776,37 @@ function Spectate({
           const isCastling =
             piece?.type === "KING" && Math.abs(toY - fromY) === 2;
 
+          const movements = [];
           if (isCastling) {
             // Queenside castling
             if (fromY - toY > 0) {
-              match.dispatch({
-                type: "PLACE_PIECE",
-                params: {
-                  fromX,
-                  fromY: 0,
-                  toX: fromX,
-                  toY: fromY - 1,
-                },
+              movements.push({
+                fromX,
+                fromY: 0,
+                toX: fromX,
+                toY: fromY - 1,
               });
             }
             // Kingside castling
             else {
-              match.dispatch({
-                type: "PLACE_PIECE",
-                params: {
-                  fromX,
-                  fromY: 7,
-                  toX: fromX,
-                  toY: fromY + 1,
-                },
+              movements.push({
+                fromX,
+                fromY: 7,
+                toX: fromX,
+                toY: fromY + 1,
               });
             }
           }
+          movements.push({
+            fromX: message.fromX,
+            fromY: message.fromY,
+            toX: message.toX,
+            toY: message.toY,
+          });
           match.dispatch({
-            type: "PLACE_PIECE",
+            type: "PLACE_PIECES",
             params: {
-              fromX: message.fromX,
-              fromY: message.fromY,
-              toX: message.toX,
-              toY: message.toY,
+              movements: movements,
             },
           });
           break;
@@ -920,18 +907,260 @@ function Spectate({
 }
 
 export default function Lobby() {
+  const searchParams = useSearchParams();
+  const code = searchParams.get("code");
+
   const [view, setView] = useState<LobbyView>("home");
   const showBackButton = view !== "home";
   const [isGameStart, setIsGameStart] = useState(false);
   const match = useMatchContext();
   const user = useUserDataContext();
-  console.log("LOBBY", match);
+  const useReconnectQuery = useReconnectMatch({
+    userName: user.value.userName,
+  });
+
+  const spectateQuery = useSpecateMatch({
+    code: code ? code : "",
+    userName: user.value.userName,
+  });
+
+  useEffect(() => {
+    if (!spectateQuery.isSuccess) return;
+    setIsGameStart(true);
+    const socket = new WebSocket(WS_URI);
+
+    socket.onmessage = (event) => {
+      const message = JSON.parse(event.data);
+      switch (message.type) {
+        case "MOVE_PIECE":
+          const { fromX, fromY, toX, toY } = message;
+
+          const piece = match.value.board[fromX][fromY];
+
+          const isCastling =
+            piece?.type === "KING" && Math.abs(toY - fromY) === 2;
+
+          const movements = [];
+          if (isCastling) {
+            // Queenside castling
+            if (fromY - toY > 0) {
+              movements.push({
+                fromX,
+                fromY: 0,
+                toX: fromX,
+                toY: fromY - 1,
+              });
+            }
+            // Kingside castling
+            else {
+              movements.push({
+                fromX,
+                fromY: 7,
+                toX: fromX,
+                toY: fromY + 1,
+              });
+            }
+          }
+          movements.push({
+            fromX: message.fromX,
+            fromY: message.fromY,
+            toX: message.toX,
+            toY: message.toY,
+          });
+          match.dispatch({
+            type: "PLACE_PIECES",
+            params: {
+              movements: movements,
+            },
+          });
+          break;
+        case "MESSAGE":
+          match.dispatch({
+            type: "ADD_MESSAGE",
+            params: {
+              userName: message.from,
+              message: message.message,
+              domain: message.domain,
+            },
+          });
+          break;
+        case "END":
+          match.dispatch({
+            type: "END",
+            params: {
+              winner: message.winner,
+            },
+          });
+          break;
+        default:
+          console.warn("Unknown message:", message);
+      }
+    };
+
+    socket.onopen = () => {
+      socket.send(
+        JSON.stringify({
+          type: "INIT",
+          userType: "SPECTATOR",
+          userName: user.value.userName,
+        }),
+      );
+    };
+
+    match.dispatch({
+      type: "CONFIGURE",
+      params: {
+        code: spectateQuery.data.code,
+        color: spectateQuery.data.color,
+        domain: spectateQuery.data.domain,
+        increment: spectateQuery.data.increment,
+        turnTime: spectateQuery.data.turnTime,
+        guestName: spectateQuery.data.guest,
+        hostName: spectateQuery.data.host,
+      },
+    });
+
+    match.dispatch({
+      type: "SPECTATE_INIT",
+      params: {
+        socket: socket,
+        teamInTurn: spectateQuery.data.playerInTurn,
+        board: spectateQuery.data.board,
+      },
+    });
+  }, [spectateQuery.isSuccess]);
+
+  useEffect(() => {
+    if (!useReconnectQuery.isSuccess) return;
+    setIsGameStart(true);
+    const socket = new WebSocket(WS_URI);
+
+    socket.onmessage = (event) => {
+      const message = JSON.parse(event.data);
+      switch (message.type) {
+        case "MOVE_PIECE":
+          const { fromX, fromY, toX, toY } = message;
+
+          const piece = match.value.board[fromX][fromY];
+
+          const isCastling =
+            piece?.type === "KING" && Math.abs(toY - fromY) === 2;
+
+          const movements = [];
+          if (isCastling) {
+            // Queenside castling
+            if (fromY - toY > 0) {
+              movements.push({
+                fromX,
+                fromY: 0,
+                toX: fromX,
+                toY: fromY - 1,
+              });
+            }
+            // Kingside castling
+            else {
+              movements.push({
+                fromX,
+                fromY: 7,
+                toX: fromX,
+                toY: fromY + 1,
+              });
+            }
+          }
+          movements.push({
+            fromX: message.fromX,
+            fromY: message.fromY,
+            toX: message.toX,
+            toY: message.toY,
+          });
+          match.dispatch({
+            type: "PLACE_PIECES",
+            params: {
+              movements: movements,
+            },
+          });
+          break;
+        case "MESSAGE":
+          match.dispatch({
+            type: "ADD_MESSAGE",
+            params: {
+              userName: message.from,
+              message: message.message,
+              domain: message.domain,
+            },
+          });
+          break;
+        case "END":
+          match.dispatch({
+            type: "END",
+            params: {
+              winner: message.winner,
+            },
+          });
+          break;
+        default:
+          console.warn("Unknown message:", message);
+      }
+    };
+
+    socket.onopen = () => {
+      socket.send(
+        JSON.stringify({
+          type: "INIT",
+          userType: "PLAYER",
+          userName: user.value.userName,
+        }),
+      );
+    };
+    match.dispatch({
+      type: "CONFIGURE",
+      params: {
+        code: useReconnectQuery.data.code,
+        color: useReconnectQuery.data.color,
+        domain: useReconnectQuery.data.domain,
+        increment: useReconnectQuery.data.increment,
+        turnTime: useReconnectQuery.data.turnTime,
+        guestName: useReconnectQuery.data.guest,
+        hostName: useReconnectQuery.data.host,
+      },
+    });
+    match.dispatch({
+      type: "START_GAME",
+      params: {
+        socket: socket,
+        teamInTurn: useReconnectQuery.data.playerInTurn,
+        guestName: useReconnectQuery.data.guest,
+        hostName: useReconnectQuery.data.host,
+      },
+    });
+    match.dispatch({
+      type: "RESYNC",
+      params: {
+        board: useReconnectQuery.data.board,
+        guestTime: useReconnectQuery.data.guestTime,
+        hostTime: useReconnectQuery.data.hostTime,
+        teamInTurn: useReconnectQuery.data.playerInTurn,
+      },
+    });
+  }, [useReconnectQuery.isSuccess]);
+  console.log(
+    "BOOLEANS",
+    isGameStart,
+    useReconnectQuery.isSuccess,
+    spectateQuery.isSuccess,
+  );
   return (
     <>
       <div className="z-1 relative">
         <Modal
           zIndex={50}
-          opened={!isGameStart}
+          opened={
+            !(
+              isGameStart ||
+              useReconnectQuery.isSuccess ||
+              spectateQuery.isSuccess
+            )
+          }
           onClose={() => {}}
           title="Lobby"
           centered
@@ -942,172 +1171,223 @@ export default function Lobby() {
               fontSize: "var(--header-3)",
               fontWeight: "var(--bold)",
             },
+            content: {
+              marginLeft: 40,
+              width: "calc(100% - 40px)",
+            },
+            overlay: {
+              left: 40,
+            },
+            inner: {
+              padding: 40,
+            },
           }}
+          style={{ backgroundColor: "transparent" }}
         >
-          {showBackButton && (
-            <ActionIcon
-              mb="md"
-              size="lg"
-              variant="subtle"
-              onClick={() => setView("home")}
-            >
-              <ArrowLeftIcon size={30} />
-            </ActionIcon>
-          )}
+          <Box>
+            {showBackButton && (
+              <ActionIcon
+                mb="md"
+                size="lg"
+                variant="subtle"
+                onClick={() => setView("home")}
+              >
+                <ArrowLeftIcon size={30} />
+              </ActionIcon>
+            )}
 
-          {view === "home" && <LobbyHome onNavigate={setView} />}
+            {view === "home" && <LobbyHome onNavigate={setView} />}
 
-          {view === "create-room" && <Room setIsGameStart={setIsGameStart} />}
+            {view === "create-room" && <Room setIsGameStart={setIsGameStart} />}
 
-          {view === "join-room" && <JoinRoom setIsGameStart={setIsGameStart} />}
+            {view === "join-room" && (
+              <JoinRoom setIsGameStart={setIsGameStart} />
+            )}
 
-          {view === "matchmaking" && (
-            <Matchmaking setIsGameStart={setIsGameStart} />
-          )}
+            {view === "matchmaking" && (
+              <Matchmaking setIsGameStart={setIsGameStart} />
+            )}
 
-          {view === "spectate" && <Spectate setIsGameStart={setIsGameStart} />}
+            {view === "spectate" && (
+              <Spectate setIsGameStart={setIsGameStart} />
+            )}
+          </Box>
         </Modal>
       </div>
       <Grid>
-        <Grid.Col span={{ base: 12, lg: 3 }}></Grid.Col>
-        <Grid.Col span={{ base: 12, lg: 6 }}>
+        <Grid.Col span={{ base: 12, xxl: 3 }}></Grid.Col>
+        <Grid.Col span={{ base: 12, xxl: 6 }}>
           <Center>
-            <Stack>
+            <Stack align="center">
               {match.value.teamInTurn && (
-                <Flex
-                  p={"xs"}
-                  justify={"space-between"}
-                  style={{
-                    background:
-                      "linear-gradient(90deg,rgba(252, 163, 17, 0.01) 0%, rgba(252, 163, 17, 1) 25%, rgba(252, 163, 17, 1) 50%, rgba(252, 163, 17, 1) 75%, rgba(252, 163, 17, 0.01) 100%)",
-                  }}
-                >
-                  {match.value.winner ? (
-                    <Text size="lg" c={"var(--text)"}>
-                      {`${match.value.winner === "HOST" ? match.value.hostName : match.value.guestName}`}{" "}
-                      has won the game
-                    </Text>
-                  ) : (
-                    <Flex justify={"space-between"} w={"100%"}>
-                      <Flex>
+                <Paper py={"xs"} px={"xs"} bg={"var(--primary)"} w={"100%"}>
+                  <Flex justify={"space-between"}>
+                    <Stack w={"100%"} gap={"0px"} align="center">
+                      <Flex gap={"xs"} justify={"center"}>
+                        <Title order={4} c={"var(--text)"}>
+                          Code :{" "}
+                        </Title>
                         <Text size="lg" c={"var(--text)"}>
-                          {user.value.userName === match.value.hostName &&
-                          match.value.role === "PLAYER"
-                            ? "YOU: "
-                            : "OPPONENT: "}
-                        </Text>
-                        <Text
-                          size="lg"
-                          c={
-                            match.value.teamInTurn === "HOST"
-                              ? "green"
-                              : "var(--text)"
-                          }
-                        >
-                          {match.value.hostName}
+                          {match.value.code}
                         </Text>
                       </Flex>
-                      <Text size="lg" c={"var(--text)"}>
-                        VS
-                      </Text>
-                      <Flex>
+                      {match.value.winner ? (
                         <Text size="lg" c={"var(--text)"}>
-                          {user.value.userName === match.value.guestName &&
-                          match.value.role === "PLAYER"
-                            ? "YOU: "
-                            : "OPPONENT: "}
+                          {`${match.value.winner === "DRAW" ? "DRAW" : match.value.winner === "HOST" ? `${match.value.hostName} has won the game` : `${match.value.guestName} has won the game`}`}{" "}
                         </Text>
-                        <Text
-                          size="lg"
-                          c={
-                            match.value.teamInTurn === "GUEST"
-                              ? "green"
-                              : "var(--text)"
-                          }
+                      ) : (
+                        <Flex
+                          justify={"space-between"}
+                          w={"100%"}
+                          direction={{ base: "column", md: "row" }}
+                          c={"var(--text)"}
                         >
-                          {match.value.guestName}
-                        </Text>
-                      </Flex>
-                    </Flex>
-                  )}
-                </Flex>
+                          <Stack>
+                            <Text size="lg" c={"var(--text)"}>
+                              {user.value.userName === match.value.hostName &&
+                              match.value.role === "PLAYER"
+                                ? "YOU: "
+                                : "OPPONENT: "}
+                            </Text>
+                            <Text
+                              size="lg"
+                              c={
+                                match.value.teamInTurn === "HOST"
+                                  ? "green.9"
+                                  : "var(--text)"
+                              }
+                            >
+                              {match.value.hostName}
+                            </Text>
+                            {match.value.time.host ? (
+                              <Timer
+                                time={match.value.time.host}
+                                updaterFn={(time: number) => {
+                                  if (match.value.teamInTurn === "GUEST")
+                                    return;
+                                  match.dispatch({
+                                    type: "UPDATE_TIME",
+                                    params: {
+                                      host: (match.value.time.host ?? 0) - time,
+                                      guest: match.value.time.guest ?? 0,
+                                    },
+                                  });
+                                }}
+                              ></Timer>
+                            ) : (
+                              ""
+                            )}
+                          </Stack>
+                          <Stack>
+                            <Text size="lg" c={"var(--text)"}>
+                              {user.value.userName === match.value.guestName &&
+                              match.value.role === "PLAYER"
+                                ? "YOU: "
+                                : "OPPONENT: "}
+                            </Text>
+                            <Text
+                              size="lg"
+                              c={
+                                match.value.teamInTurn === "GUEST"
+                                  ? "green.9"
+                                  : "var(--text)"
+                              }
+                            >
+                              {match.value.guestName}
+                            </Text>
+                            {match.value.time.guest ? (
+                              <Timer
+                                time={match.value.time.guest}
+                                updaterFn={(time: number) => {
+                                  if (match.value.teamInTurn === "HOST") return;
+                                  match.dispatch({
+                                    type: "UPDATE_TIME",
+                                    params: {
+                                      host: match.value.time.host ?? 0,
+                                      guest:
+                                        (match.value.time.guest ?? 0) - time,
+                                    },
+                                  });
+                                }}
+                              ></Timer>
+                            ) : (
+                              ""
+                            )}
+                          </Stack>
+                        </Flex>
+                      )}
+                    </Stack>
+                  </Flex>
+                </Paper>
               )}
 
-              <Board
-                chessBoard={match.value.board}
-                team={
-                  match.value.hostName === user.value.userName
-                    ? "WHITE"
-                    : "BLACK"
-                }
-                update={(fromX, fromY, toX, toY) => {
-                  if (
-                    match.value.socket &&
-                    match.value.socket.readyState === WebSocket.OPEN
-                  ) {
-                    match.value.socket.send(
-                      JSON.stringify({
-                        type: "PLAY",
-                        userName: user.value.userName,
-                        fromX: fromX,
-                        fromY: fromY,
-                        toX: toX,
-                        toY: toY,
-                      }),
-                    );
+              <Stack pos={"relative"}>
+                <Board
+                  chessBoard={match.value.board}
+                  team={
+                    match.value.hostName === user.value.userName
+                      ? match.value.color
+                      : match.value.color === "BLACK"
+                        ? "WHITE"
+                        : "BLACK"
                   }
-                }}
-              ></Board>
+                  update={(fromX, fromY, toX, toY) => {
+                    if (
+                      match.value.socket &&
+                      match.value.socket.readyState === WebSocket.OPEN
+                    ) {
+                      match.value.socket.send(
+                        JSON.stringify({
+                          type: "PLAY",
+                          userName: user.value.userName,
+                          fromX: fromX,
+                          fromY: fromY,
+                          toX: toX,
+                          toY: toY,
+                        }),
+                      );
+                    }
+                  }}
+                ></Board>
+                {match.value.winner ? (
+                  <Overlay styles={{ root: { zIndex: 10 } }}></Overlay>
+                ) : (
+                  ""
+                )}
+              </Stack>
             </Stack>
           </Center>
         </Grid.Col>
-        <Grid.Col span={{ base: 12, lg: 3 }}>
+        <Grid.Col span={{ base: 12, xxl: 3 }}>
           <Center>
-            <Stack>
-              {match.value.time.guest && match.value.time.host && (
-                <Paper bg={"var(--secondary"} p={"xs"}>
-                  <Grid>
-                    <Grid.Col span={{ base: 6 }}>
-                      <Stack>
-                        <Title order={3}>Host</Title>
-                        <Timer
-                          time={match.value.time.host}
-                          updaterFn={(time: number) => {
-                            if (match.value.teamInTurn === "GUEST") return;
-                            match.dispatch({
-                              type: "UPDATE_TIME",
-                              params: {
-                                host: (match.value.time.host ?? 0) - time,
-                                guest: match.value.time.guest ?? 0,
-                              },
-                            });
-                          }}
-                        ></Timer>
-                      </Stack>
-                    </Grid.Col>
-                    <Grid.Col span={{ base: 6 }}>
-                      <Stack>
-                        <Title order={3}>Guest</Title>
-                        <Timer
-                          time={match.value.time.guest}
-                          updaterFn={(time: number) => {
-                            if (match.value.teamInTurn === "HOST") return;
-                            match.dispatch({
-                              type: "UPDATE_TIME",
-                              params: {
-                                host: match.value.time.host ?? 0,
-                                guest: (match.value.time.guest ?? 0) - time,
-                              },
-                            });
-                          }}
-                        ></Timer>
-                      </Stack>
-                    </Grid.Col>
-                  </Grid>
-                </Paper>
+            <Stack maw={"400px"}>
+              {match.value.role === "PLAYER" ? (
+                <Button
+                  size="lg"
+                  bg="red"
+                  onClick={() => {
+                    if (match.value.winner) return;
+                    if (
+                      match.value.socket &&
+                      match.value.socket.readyState === WebSocket.OPEN
+                    ) {
+                      match.value.socket.send(
+                        JSON.stringify({
+                          type: "SURRENDER",
+                          userName: user.value.userName,
+                          userType: "PLAYER",
+                        }),
+                      );
+                    }
+                  }}
+                >
+                  Resign
+                </Button>
+              ) : (
+                ""
               )}
-              <Logger data={match.value.log}></Logger>
               <Chat messages={match.value.messages}></Chat>
+              <Logger data={match.value.log}></Logger>
             </Stack>
           </Center>
         </Grid.Col>

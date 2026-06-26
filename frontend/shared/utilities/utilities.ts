@@ -12,7 +12,6 @@ export function reverse<T>(arr: T[]): T[] {
     left++;
     right--;
   }
-  console.log("reverse", arr);
   return arr;
 }
 

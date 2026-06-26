@@ -9,7 +9,7 @@ const useGetRoom = (payload: { code: string }) => {
   const query = useQuery({
     queryKey: ["players"],
     queryFn: async () => await matchApi.getMatch(payload),
-    refetchInterval: 5_000, // every 5 seconds
+    refetchInterval: 2_000, // every 5 seconds
     enabled: !!payload.code,
   });
 

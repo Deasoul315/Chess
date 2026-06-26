@@ -29,6 +29,7 @@ import { MatchContextProvider } from "@/shared/contexts/Match";
 import Shell from "@/shared/components/Shell/Shell";
 import { UserDataContextProvider } from "@/shared/contexts/UserData";
 import LocalQueryClientProvider from "@/shared/lib/tanstack";
+import { AppContextProvider } from "@/shared/contexts/App";
 
 export default function RootLayout({
   children,
@@ -50,7 +51,9 @@ export default function RootLayout({
           <LocalQueryClientProvider>
             <UserDataContextProvider>
               <MatchContextProvider>
-                <Shell>{children}</Shell>
+                <AppContextProvider>
+                  <Shell>{children}</Shell>
+                </AppContextProvider>
               </MatchContextProvider>
             </UserDataContextProvider>
           </LocalQueryClientProvider>

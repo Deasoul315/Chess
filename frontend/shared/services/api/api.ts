@@ -205,7 +205,6 @@ export class MatchApi {
     status: boolean;
   }> {
     const response = await fetch(`${API}/match/active`);
-    console.log("FETCH the active room");
     if (!response.ok) {
       const error = await response.json();
       throw new Error(error.message ?? "Failed to get matches");
@@ -270,7 +269,6 @@ export class MatchApi {
     return response.json();
   }
   async spectateMatch(payload: { code: string; userName: string }) {
-    console.log("SPECTATE");
     const url = new URLSearchParams({
       code: payload.code,
       userName: payload.userName,
@@ -284,6 +282,23 @@ export class MatchApi {
     if (!response.ok) {
       const error = await response.json();
       throw new Error(error.message ?? "cannot spectate this room");
+    }
+    return response.json();
+  }
+
+  async reconnectMatch(payload: { userName: string }) {
+    const url = new URLSearchParams({
+      userName: payload.userName,
+    });
+    const response = await fetch(`${API}/match/reconnect?${url.toString()}`, {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+      },
+    });
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.message ?? "cannot reconnect this room");
     }
     return response.json();
   }

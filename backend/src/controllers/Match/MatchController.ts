@@ -14,6 +14,7 @@ import { connections } from "../../store/global";
 import {
   ActiveRoomsSchema,
   ConfigRoomSchema,
+  GetRoomByIdParamsDTO,
   GetRoomParamsDTO,
   JoinRoomDTO,
   MakeReadyDTO,
@@ -39,6 +40,21 @@ export class MatchController {
       if (!hostUserName || !hostConnection)
         return badRequest(res, "not found host ");
 
+      if (
+        hostConnection &&
+        hostConnection.master &&
+        !hostConnection.master.winner
+      )
+        return badRequest(res, "go back to your match");
+
+      let { key: guestUserName, value: guestConnection } = findValueInMap(
+        (element, key) =>
+          element.code === hostConnection?.code &&
+          element.type === "CONTROLLED" &&
+          element.userType === "GUEST",
+        connections,
+      );
+
       hostConnection = {
         ...hostConnection,
         increment,
@@ -46,7 +62,19 @@ export class MatchController {
         domain,
         time: turnTime,
       };
+
       connections.set(hostUserName, hostConnection);
+      if (guestConnection && guestUserName) {
+        guestConnection = {
+          ...guestConnection,
+          increment,
+          color,
+          domain,
+          time: turnTime,
+        };
+
+        connections.set(guestUserName, guestConnection);
+      }
 
       return res.status(200).json({
         success: true,
@@ -85,6 +113,9 @@ export class MatchController {
       });
 
       const connection = connections.get(userName);
+
+      if (connection && connection.master && !connection.master.winner)
+        return badRequest(res, "go back to your match");
       if (
         connection &&
         connection.master === null &&
@@ -143,6 +174,70 @@ export class MatchController {
     }
   }
 
+  public async getRoomByUsername(data: GetRoomByIdParamsDTO, res: Response) {
+    const { userName } = data;
+
+    try {
+      const connection = connections.get(userName);
+
+      const { key: hostUserName, value: hostConnection } = findValueInMap(
+        (element, key) =>
+          element.code === connection?.code && element.userType === "HOST",
+        connections,
+      );
+
+      const { key: guestUserName, value: guestConnection } = findValueInMap(
+        (element, key) =>
+          element.code === connection?.code && element.userType === "GUEST",
+        connections,
+      );
+
+      if (!connection) return badRequest(res, "not found room");
+
+      const isInPlay =
+        connection && connection.master && !connection.master.winner;
+      console.log("is in play ? ", isInPlay, guestConnection, hostConnection);
+      if (
+        isInPlay &&
+        hostConnection &&
+        guestConnection &&
+        guestUserName &&
+        hostUserName
+      ) {
+        const playerInTurn = guestConnection?.master?.playerInTurn;
+
+        return res.status(200).json({
+          success: true,
+          state: "READY",
+          playerInTurn,
+          increment: hostConnection.increment,
+          turnTime: hostConnection.time,
+          board: connection.master?.board,
+          hostTime: connection.master?.hostTimeNow(),
+          guestTime: connection.master?.guestTimeNow(),
+          code: hostConnection.code,
+          host: hostConnection.master?.hostPlayer.username,
+          guest: hostConnection.master?.guestPlayer.username,
+          readyUsers: [
+            hostConnection.master?.hostPlayer.username,
+            hostConnection.master?.guestPlayer.username,
+          ],
+          color: hostConnection.color,
+          domain: hostConnection.domain,
+        });
+      }
+      return badRequest(res, "fail to get");
+    } catch (err) {
+      logger.error("[GET_ROOM] Unexpected error", err);
+
+      return res.status(500).json({
+        success: false,
+        message: "Internal server error",
+        error: err instanceof Error ? err.message : "Unknown error",
+      });
+    }
+  }
+
   public async getRoom(data: GetRoomParamsDTO, res: Response) {
     const { code } = data;
 
@@ -184,7 +279,7 @@ export class MatchController {
             hostConnection.master?.hostPlayer.username,
             hostConnection.master?.guestPlayer.username,
           ],
-          color: hostConnection.color === "WHITE" ? "BLACK" : "WHITE",
+          color: hostConnection.color,
           domain: hostConnection.domain,
         });
       }
@@ -195,6 +290,10 @@ export class MatchController {
         code: code,
         host: hostUserName,
         guest: guestUserName,
+        increment: hostConnection.increment,
+        turnTime: hostConnection.time,
+        color: hostConnection.color,
+        domain: hostConnection.domain,
         readyUsers: [
           connections.get(hostUserName)?.isReady ? hostUserName : null,
           connections.get(guestUserName ?? "")?.isReady ? guestUserName : null,
@@ -219,7 +318,11 @@ export class MatchController {
       const seenCodes = new Set();
 
       for (const [key, connection] of connections) {
-        if (connection.master && !connection.master.winner) {
+        if (
+          connection.master &&
+          !connection.master.winner &&
+          connection.domain === "PUBLIC"
+        ) {
           const code = connection.code;
 
           if (seenCodes.has(code)) continue;
@@ -252,7 +355,7 @@ export class MatchController {
     const { userName } = data;
     const requestId = crypto.randomUUID();
     const INCREMENT = 3 * 1000;
-    const TURN_TIME = 5 * 60 * 1000;
+    const TURN_TIME = 1 * 60 * 1000;
     logger.info("[RANDOM_ROOM] Request received", {
       requestId,
       userName,
@@ -287,7 +390,7 @@ export class MatchController {
 
       const connection = connections.get(userName);
 
-      if (connection && connection.master && connection.type === "RANDOM") {
+      if (connection && connection.master && !connection.master.winner) {
         logger.info("[RANDOM_ROOM] Returning existing room", {
           requestId,
           userName,
@@ -311,7 +414,8 @@ export class MatchController {
         );
       }
 
-      if (!connection || connection.type !== "RANDOM") {
+      if (!(connection && connection.type === "RANDOM" && !connection.master)) {
+        console.log("RESET CONNECTION");
         connections.set(userName, {
           master: null,
           socket: null,
@@ -475,7 +579,7 @@ export class MatchController {
         time: hostConnection.time,
         increment: hostConnection.increment,
         domain: hostConnection.domain,
-        color: hostConnection.color === "WHITE" ? "BLACK" : "WHITE",
+        color: hostConnection.color,
       });
 
       logger.info("[JOIN_ROOM] User joined successfully", {
@@ -592,7 +696,7 @@ export class MatchController {
         time: hostConnection.time,
         increment: hostConnection.increment,
         domain: hostConnection.domain,
-        color: hostConnection.color === "WHITE" ? "BLACK" : "WHITE",
+        color: hostConnection.color,
       });
       connections.set(guestUserName, {
         master,
@@ -605,7 +709,7 @@ export class MatchController {
         time: hostConnection.time,
         increment: hostConnection.increment,
         domain: hostConnection.domain,
-        color: hostConnection.color === "WHITE" ? "BLACK" : "WHITE",
+        color: hostConnection.color,
       });
 
       const { data: roomData, error } = await supabase
@@ -667,7 +771,14 @@ export class MatchController {
         connections,
       );
 
-      if (!hostConnection || !guestConnection) {
+      const connection = connections.get(userName);
+      if (
+        !hostConnection ||
+        !guestConnection ||
+        userName === guestUserName ||
+        userName === hostUserName ||
+        (connection && connection.master && !connection.master.winner)
+      ) {
         logger.warn("[SPECTATE] No host or guest connection found", {
           host: hostUserName,
         });
@@ -681,7 +792,12 @@ export class MatchController {
         });
       }
 
-      if (!hostConnection.master || !guestConnection.master) {
+      if (
+        !hostConnection.master ||
+        !guestConnection.master ||
+        guestConnection.master.winner ||
+        hostConnection.master.winner
+      ) {
         logger.warn("[SPECTATE] No hosted ready room for that code", {
           host: hostUserName,
         });
@@ -694,6 +810,8 @@ export class MatchController {
           },
         });
       }
+
+      connections.delete(userName);
 
       logger.info("[SPECTATE] Host connection found", {
         host: hostUserName,
@@ -745,7 +863,7 @@ export class MatchController {
         host: hostUserName,
         guest: hostConnection.master.guestPlayer.username,
         board: hostConnection.master.board,
-        color: "WHITE",
+        color: hostConnection.color,
         domain: "PUBLIC",
         increment: hostConnection.increment,
         turnTime: hostConnection.time,

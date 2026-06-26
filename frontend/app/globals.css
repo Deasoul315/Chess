@@ -33,7 +33,10 @@
   --header-2: 40px;
   --header-3: 32px;
   --header-4: 24px;
+  --header-5: 22px;
+  --header-6: 20px;
 
+  --text-md: 16px;
   --text-lg: 20px;
 
   --bold: 900;

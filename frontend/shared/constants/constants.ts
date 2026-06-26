@@ -117,6 +117,15 @@ export const theme = createTheme({
       },
     },
   },
+
+  breakpoints: {
+    xs: "30em",
+    sm: "40em",
+    md: "56em",
+    lg: "75em",
+    xl: "90em",
+    xxl: "110em",
+  },
 });
 
 export const Domain = {

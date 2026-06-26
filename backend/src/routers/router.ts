@@ -10,6 +10,7 @@ import {
 import {
   activeRoomsSchema,
   configRoomSchema,
+  getRoomByIdParamsSchema,
   getRoomParamsSchema,
   joinRoomSchema,
   makeReadySchema,
@@ -196,6 +197,18 @@ router.get("/match/active", (req, res) => {
 
   return matchController.getActiveRooms(result.data, res);
 });
+router.get("/match/reconnect", (req, res) => {
+  const result = getRoomByIdParamsSchema.safeParse(req.query);
+
+  if (!result.success) {
+    return res.status(400).json({
+      message: "Invalid params",
+      errors: result.error.flatten(),
+    });
+  }
+
+  return matchController.getRoomByUsername(result.data, res);
+});
 router.get("/match/:code", (req, res) => {
   const result = getRoomParamsSchema.safeParse(req.params);
 
@@ -208,7 +221,6 @@ router.get("/match/:code", (req, res) => {
 
   return matchController.getRoom(result.data, res);
 });
-
 router.patch("/match", (req, res) => {
   const result = joinRoomSchema.safeParse(req.body);
 

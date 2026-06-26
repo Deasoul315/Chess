@@ -1,5 +1,7 @@
+import { useMatchContext } from "@/shared/contexts/Match";
 import { Tooltip, UnstyledButton } from "@mantine/core";
 import { HeartIcon } from "@phosphor-icons/react";
+import { useQueryClient } from "@tanstack/react-query";
 import Link from "next/link";
 import React, { useState } from "react";
 
@@ -14,7 +16,8 @@ const SideBar = ({
 }) => {
   const [active, setActive] = useState("Releases");
   const [activeLink, setActiveLink] = useState("Settings");
-
+  const queryClient = useQueryClient();
+  const match = useMatchContext();
   const mainLinks = links.map((link) => (
     <Tooltip
       label={link.label}
@@ -24,7 +27,13 @@ const SideBar = ({
       key={link.label}
     >
       <UnstyledButton
-        onClick={() => setActive(link.label)}
+        onClick={() => {
+          setActive(link.label);
+
+          match.dispatch({ type: "RESET", params: {} });
+          queryClient.invalidateQueries();
+          queryClient.resetQueries();
+        }}
         data-active={link.label === active || undefined}
         aria-label={link.label}
       >

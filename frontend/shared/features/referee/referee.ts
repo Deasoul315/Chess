@@ -1,25 +1,18 @@
 import { Piece } from "@/shared/constants/types";
 
 export class Referee {
-  board: (Piece | null)[][];
-  private isMoveBoard: boolean[][];
-  constructor(board: (Piece | null)[][], isMoveBoard: boolean[][]) {
-    this.board = [...Array(8)].map(() => Array(8).fill(null));
-    this.isMoveBoard = isMoveBoard;
-
-    for (let i = 0; i < 8; i++) {
-      for (let j = 0; j < 8; j++) {
-        let piece = board[i][j];
-        this.board[i][j] = piece;
-      }
-    }
-  }
-
-  canMove(fromX: number, fromY: number, toX: number, toY: number): boolean {
-    if (this.board[fromX][fromY] === null) return false;
+  canMove(
+    fromX: number,
+    fromY: number,
+    toX: number,
+    toY: number,
+    board: (Piece | null)[][],
+    isMoveBoard: boolean[][],
+  ): boolean {
+    if (board[fromX][fromY] === null) return false;
 
     let movementHeatMap: Array<Array<null | string>> =
-      this.extractCorrectPlacements(fromX, fromY);
+      this.extractCorrectPlacements(fromX, fromY, board, isMoveBoard);
 
     if (movementHeatMap[toX][toY] === "INVALID") return false;
 
@@ -29,11 +22,13 @@ export class Referee {
   extractCorrectPlacements(
     x: number,
     y: number,
+    board: (Piece | null)[][],
+    isMoveBoard: boolean[][],
   ): Array<Array<"MOVE" | "ATTACK" | "INVALID">> {
     let temp: Array<Array<"MOVE" | "ATTACK" | "INVALID">> = [...Array(8)].map(
       () => Array(8).fill("INVALID"),
     );
-    let targetPiece = this.board[x][y];
+    let targetPiece = board[x][y];
 
     if (!targetPiece) throw "cannot extract from null";
 
@@ -43,14 +38,14 @@ export class Referee {
           if (x === 1) {
             // initial double move case
             if (x + 1 < 8) {
-              let piece = this.board[x + 1][y];
-              let pawn = this.board[x][y];
+              let piece = board[x + 1][y];
+              let pawn = board[x][y];
 
-              let posDia = this.board[x + 1][y + 1];
+              let posDia = board[x + 1][y + 1];
               if (y + 1 < 8 && posDia && posDia.team !== targetPiece.team) {
                 temp[x + 1][y + 1] = "ATTACK";
               }
-              let negDia = this.board[x + 1][y - 1];
+              let negDia = board[x + 1][y - 1];
               if (y - 1 > -1 && negDia && negDia.team !== targetPiece.team) {
                 temp[x + 1][y - 1] = "ATTACK";
               }
@@ -59,7 +54,7 @@ export class Referee {
                 temp[x + 1][y] = "MOVE";
 
                 if (x + 2 < 8) {
-                  let piece2 = this.board[x + 2][y];
+                  let piece2 = board[x + 2][y];
 
                   if (piece2 === null) {
                     temp[x + 2][y] = "MOVE";
@@ -70,14 +65,14 @@ export class Referee {
           } else {
             // normal move
             if (x + 1 < 8) {
-              let piece = this.board[x + 1][y];
-              let pawn = this.board[x][y];
-              let posDia = this.board[x + 1][y + 1];
+              let piece = board[x + 1][y];
+              let pawn = board[x][y];
+              let posDia = board[x + 1][y + 1];
 
               if (y + 1 < 8 && posDia && posDia.team !== targetPiece.team) {
                 temp[x + 1][y + 1] = "ATTACK";
               }
-              let negDia = this.board[x + 1][y - 1];
+              let negDia = board[x + 1][y - 1];
               if (y - 1 > -1 && negDia && negDia.team !== targetPiece.team) {
                 temp[x + 1][y - 1] = "ATTACK";
               }
@@ -90,21 +85,21 @@ export class Referee {
         } else {
           if (x === 6) {
             if (x - 1 >= 0 && x - 1 < 8) {
-              let piece = this.board[x - 1][y];
-              let pawn = this.board[x][y];
-              let posDia = this.board[x - 1][y + 1];
+              let piece = board[x - 1][y];
+              let pawn = board[x][y];
+              let posDia = board[x - 1][y + 1];
               if (y + 1 < 8 && posDia && posDia.team !== targetPiece.team) {
                 temp[x - 1][y + 1] = "ATTACK";
               }
-              let negDia = this.board[x - 1][y - 1];
+              let negDia = board[x - 1][y - 1];
               if (y - 1 > -1 && negDia && negDia.team !== targetPiece.team) {
                 temp[x - 1][y - 1] = "ATTACK";
               }
               if (piece === null) {
                 temp[x - 1][y] = "MOVE";
                 if (x - 2 >= 0 && x - 2 < 8) {
-                  let piece = this.board[x - 2][y];
-                  let pawn = this.board[x][y];
+                  let piece = board[x - 2][y];
+                  let pawn = board[x][y];
 
                   if (piece === null) {
                     temp[x - 2][y] = "MOVE";
@@ -114,13 +109,13 @@ export class Referee {
             }
           } else {
             if (x - 1 >= 0 && x - 1 < 8) {
-              let piece = this.board[x - 1][y];
-              let pawn = this.board[x][y];
-              let posDia = this.board[x - 1][y + 1];
+              let piece = board[x - 1][y];
+              let pawn = board[x][y];
+              let posDia = board[x - 1][y + 1];
               if (y + 1 < 8 && posDia && posDia.team !== targetPiece.team) {
                 temp[x - 1][y + 1] = "ATTACK";
               }
-              let negDia = this.board[x - 1][y - 1];
+              let negDia = board[x - 1][y - 1];
               if (y - 1 > -1 && negDia && negDia.team !== targetPiece.team) {
                 temp[x - 1][y - 1] = "ATTACK";
               }
@@ -134,12 +129,12 @@ export class Referee {
       }
 
       case "ROOK": {
-        // console.log(this.board)
+        // console.log(board)
         let i: number = x + 1;
         while (i >= 0 && i < 8) {
           //since you acess . key typescript doesnt understand it same thing use var first
-          let piece = this.board[i][y];
-          let rook = this.board[x][y] as Piece;
+          let piece = board[i][y];
+          let rook = board[x][y] as Piece;
           if (piece !== null && piece.team === rook.team) {
             break;
           }
@@ -152,8 +147,8 @@ export class Referee {
         }
         i = x - 1;
         while (i >= 0 && i < 8) {
-          let piece = this.board[i][y];
-          let rook = this.board[x][y] as Piece;
+          let piece = board[i][y];
+          let rook = board[x][y] as Piece;
           if (piece !== null && piece.team === rook.team) {
             break;
           }
@@ -167,8 +162,8 @@ export class Referee {
         }
         let j: number = y + 1;
         while (j >= 0 && j < 8) {
-          let piece = this.board[x][j];
-          let rook = this.board[x][y] as Piece;
+          let piece = board[x][j];
+          let rook = board[x][y] as Piece;
           if (piece !== null && piece.team === rook.team) {
             break;
           }
@@ -182,8 +177,8 @@ export class Referee {
         }
         j = y - 1;
         while (j >= 0 && j < 8) {
-          let piece = this.board[x][j];
-          let rook = this.board[x][y] as Piece;
+          let piece = board[x][j];
+          let rook = board[x][y] as Piece;
           if (piece !== null && piece.team === rook.team) {
             break;
           }
@@ -214,14 +209,14 @@ export class Referee {
           const nx = x + dx;
           const ny = y + dy;
           let isOutOfBound = nx < 0 || nx > 7 || ny < 0 || ny > 7;
-          if (!isOutOfBound && this.board[nx][ny] === null) {
+          if (!isOutOfBound && board[nx][ny] === null) {
             temp[nx][ny] = "MOVE";
           }
           if (
             !isOutOfBound &&
-            this.board[nx][ny] !== null &&
-            this.board[x][y] &&
-            this.board[nx][ny].team !== this.board[x][y].team
+            board[nx][ny] !== null &&
+            board[x][y] &&
+            board[nx][ny].team !== board[x][y].team
           ) {
             temp[nx][ny] = "ATTACK";
           }
@@ -242,20 +237,12 @@ export class Referee {
           let ny = y + dy;
           let isOutOfBound: boolean = !(nx >= 0 && nx < 8 && ny >= 0 && ny < 8);
           while (!isOutOfBound) {
-            let piece = this.board[nx][ny];
-            if (
-              piece &&
-              this.board[x][y] &&
-              piece.team !== this.board[x][y].team
-            ) {
+            let piece = board[nx][ny];
+            if (piece && board[x][y] && piece.team !== board[x][y].team) {
               temp[nx][ny] = "ATTACK";
               break;
             }
-            if (
-              piece &&
-              this.board[x][y] &&
-              piece.team === this.board[x][y].team
-            ) {
+            if (piece && board[x][y] && piece.team === board[x][y].team) {
               break;
             }
             temp[nx][ny] = "MOVE";
@@ -284,20 +271,12 @@ export class Referee {
           const ny = y + dy;
           let isOutOfBound: boolean = !(nx >= 0 && nx < 8 && ny >= 0 && ny < 8);
           if (!isOutOfBound) {
-            let piece = this.board[nx][ny];
-            if (
-              piece &&
-              this.board[x][y] &&
-              piece.team !== this.board[x][y].team
-            ) {
+            let piece = board[nx][ny];
+            if (piece && board[x][y] && piece.team !== board[x][y].team) {
               temp[nx][ny] = "ATTACK";
               return [dx, dy];
             }
-            if (
-              piece &&
-              this.board[x][y] &&
-              piece.team === this.board[x][y].team
-            ) {
+            if (piece && board[x][y] && piece.team === board[x][y].team) {
               return [dx, dy];
             }
             temp[nx][ny] = "MOVE";
@@ -309,16 +288,28 @@ export class Referee {
           [0, 2],
         ];
 
-        const piece = this.board[x][y];
+        let kPos = {
+          x: targetPiece.team === "BLACK" ? 0 : 7,
+          y: 4,
+        };
+        let rRookPos = {
+          x: targetPiece.team === "BLACK" ? 0 : 7,
+          y: 7,
+        };
+        let lRookPos = {
+          x: targetPiece.team === "BLACK" ? 0 : 7,
+          y: 0,
+        };
+        const piece = board[x][y];
         if (!piece) break;
+        if (isMoveBoard[kPos.x][kPos.y]) break;
 
-        if (this.isMoveBoard[x][y]) break;
         if (
-          !this.isMoveBoard[x][7] &&
-          !this.board[x][y + 1] &&
-          !this.board[x][y + 2]
+          !isMoveBoard[rRookPos.x][rRookPos.y] &&
+          !board[x][y + 1] &&
+          !board[x][y + 2]
         ) {
-          const tempBoard = structuredClone(this.board);
+          const tempBoard = structuredClone(board);
           let isCastling = true;
           isCastling = isCastling && !this.isChecked(piece.team, tempBoard);
           tempBoard[x][y + 1] = tempBoard[x][y];
@@ -332,12 +323,12 @@ export class Referee {
           }
         }
         if (
-          !this.isMoveBoard[x][0] &&
-          !this.board[x][y - 1] &&
-          !this.board[x][y - 2] &&
-          !this.board[x][y - 3]
+          !isMoveBoard[lRookPos.x][lRookPos.y] &&
+          !board[x][y - 1] &&
+          !board[x][y - 2] &&
+          !board[x][y - 3]
         ) {
-          const tempBoard = structuredClone(this.board);
+          const tempBoard = structuredClone(board);
           let isCastling = true;
           isCastling = isCastling && !this.isChecked(piece.team, tempBoard);
           tempBoard[x][y - 1] = tempBoard[x][y];
@@ -366,20 +357,12 @@ export class Referee {
           let ny = y + dy;
           let isOutOfBound: boolean = !(nx >= 0 && nx < 8 && ny >= 0 && ny < 8);
           while (!isOutOfBound) {
-            let piece = this.board[nx][ny];
-            if (
-              piece &&
-              this.board[x][y] &&
-              piece.team !== this.board[x][y].team
-            ) {
+            let piece = board[nx][ny];
+            if (piece && board[x][y] && piece.team !== board[x][y].team) {
               temp[nx][ny] = "ATTACK";
               break;
             }
-            if (
-              piece &&
-              this.board[x][y] &&
-              piece.team === this.board[x][y].team
-            ) {
+            if (piece && board[x][y] && piece.team === board[x][y].team) {
               break;
             }
             temp[nx][ny] = "MOVE";
@@ -391,8 +374,8 @@ export class Referee {
           let i: number = x + 1;
           while (i >= 0 && i < 8) {
             //since you acess . key typescript doesnt understand it same thing use var first
-            let piece = this.board[i][y];
-            let rook = this.board[x][y] as Piece;
+            let piece = board[i][y];
+            let rook = board[x][y] as Piece;
             if (piece !== null && piece.team === rook.team) {
               break;
             }
@@ -405,8 +388,8 @@ export class Referee {
           }
           i = x - 1;
           while (i >= 0 && i < 8) {
-            let piece = this.board[i][y];
-            let rook = this.board[x][y] as Piece;
+            let piece = board[i][y];
+            let rook = board[x][y] as Piece;
             if (piece !== null && piece.team === rook.team) {
               break;
             }
@@ -420,8 +403,8 @@ export class Referee {
           }
           let j: number = y + 1;
           while (j >= 0 && j < 8) {
-            let piece = this.board[x][j];
-            let rook = this.board[x][y] as Piece;
+            let piece = board[x][j];
+            let rook = board[x][y] as Piece;
             if (piece !== null && piece.team === rook.team) {
               break;
             }
@@ -435,8 +418,8 @@ export class Referee {
           }
           j = y - 1;
           while (j >= 0 && j < 8) {
-            let piece = this.board[x][j];
-            let rook = this.board[x][y] as Piece;
+            let piece = board[x][j];
+            let rook = board[x][y] as Piece;
             if (piece !== null && piece.team === rook.team) {
               break;
             }
@@ -452,17 +435,36 @@ export class Referee {
         break;
       }
     }
+
+    for (let tx = 0; tx < 8; tx++) {
+      for (let ty = 0; ty < 8; ty++) {
+        if (temp[tx][ty] === "INVALID") continue;
+
+        const tempBoard = structuredClone(board);
+
+        // make move
+        tempBoard[tx][ty] = tempBoard[x][y];
+        tempBoard[x][y] = null;
+
+        // if king survives, check can be escaped
+        if (this.isChecked(targetPiece.team, tempBoard)) {
+          temp[tx][ty] = "INVALID";
+        }
+      }
+    }
+
     return temp;
   }
 
   extractDangerPlacements(
     x: number,
     y: number,
+    board: (Piece | null)[][],
   ): Array<Array<"MOVE" | "ATTACK" | "INVALID">> {
     let temp: Array<Array<"MOVE" | "ATTACK" | "INVALID">> = [...Array(8)].map(
       () => Array(8).fill("INVALID"),
     );
-    let targetPiece = this.board[x][y];
+    let targetPiece = board[x][y];
 
     if (!targetPiece) throw "cannot extract from null";
 
@@ -472,14 +474,14 @@ export class Referee {
           if (x === 1) {
             // initial double move case
             if (x + 1 < 8) {
-              let piece = this.board[x + 1][y];
-              let pawn = this.board[x][y];
+              let piece = board[x + 1][y];
+              let pawn = board[x][y];
 
-              let posDia = this.board[x + 1][y + 1];
+              let posDia = board[x + 1][y + 1];
               if (y + 1 < 8 && posDia && posDia.team !== targetPiece.team) {
                 temp[x + 1][y + 1] = "ATTACK";
               }
-              let negDia = this.board[x + 1][y - 1];
+              let negDia = board[x + 1][y - 1];
               if (y - 1 > -1 && negDia && negDia.team !== targetPiece.team) {
                 temp[x + 1][y - 1] = "ATTACK";
               }
@@ -488,7 +490,7 @@ export class Referee {
                 temp[x + 1][y] = "MOVE";
 
                 if (x + 2 < 8) {
-                  let piece2 = this.board[x + 2][y];
+                  let piece2 = board[x + 2][y];
 
                   if (piece2 === null) {
                     temp[x + 2][y] = "MOVE";
@@ -499,14 +501,14 @@ export class Referee {
           } else {
             // normal move
             if (x + 1 < 8) {
-              let piece = this.board[x + 1][y];
-              let pawn = this.board[x][y];
-              let posDia = this.board[x + 1][y + 1];
+              let piece = board[x + 1][y];
+              let pawn = board[x][y];
+              let posDia = board[x + 1][y + 1];
 
               if (y + 1 < 8 && posDia && posDia.team !== targetPiece.team) {
                 temp[x + 1][y + 1] = "ATTACK";
               }
-              let negDia = this.board[x + 1][y - 1];
+              let negDia = board[x + 1][y - 1];
               if (y - 1 > -1 && negDia && negDia.team !== targetPiece.team) {
                 temp[x + 1][y - 1] = "ATTACK";
               }
@@ -519,21 +521,21 @@ export class Referee {
         } else {
           if (x === 6) {
             if (x - 1 >= 0 && x - 1 < 8) {
-              let piece = this.board[x - 1][y];
-              let pawn = this.board[x][y];
-              let posDia = this.board[x - 1][y + 1];
+              let piece = board[x - 1][y];
+              let pawn = board[x][y];
+              let posDia = board[x - 1][y + 1];
               if (y + 1 < 8 && posDia && posDia.team !== targetPiece.team) {
                 temp[x - 1][y + 1] = "ATTACK";
               }
-              let negDia = this.board[x - 1][y - 1];
+              let negDia = board[x - 1][y - 1];
               if (y - 1 > -1 && negDia && negDia.team !== targetPiece.team) {
                 temp[x - 1][y - 1] = "ATTACK";
               }
               if (piece === null) {
                 temp[x - 1][y] = "MOVE";
                 if (x - 2 >= 0 && x - 2 < 8) {
-                  let piece = this.board[x - 2][y];
-                  let pawn = this.board[x][y];
+                  let piece = board[x - 2][y];
+                  let pawn = board[x][y];
 
                   if (piece === null) {
                     temp[x - 2][y] = "MOVE";
@@ -543,13 +545,13 @@ export class Referee {
             }
           } else {
             if (x - 1 >= 0 && x - 1 < 8) {
-              let piece = this.board[x - 1][y];
-              let pawn = this.board[x][y];
-              let posDia = this.board[x - 1][y + 1];
+              let piece = board[x - 1][y];
+              let pawn = board[x][y];
+              let posDia = board[x - 1][y + 1];
               if (y + 1 < 8 && posDia && posDia.team !== targetPiece.team) {
                 temp[x - 1][y + 1] = "ATTACK";
               }
-              let negDia = this.board[x - 1][y - 1];
+              let negDia = board[x - 1][y - 1];
               if (y - 1 > -1 && negDia && negDia.team !== targetPiece.team) {
                 temp[x - 1][y - 1] = "ATTACK";
               }
@@ -563,12 +565,12 @@ export class Referee {
       }
 
       case "ROOK": {
-        // console.log(this.board)
+        // console.log(board)
         let i: number = x + 1;
         while (i >= 0 && i < 8) {
           //since you acess . key typescript doesnt understand it same thing use var first
-          let piece = this.board[i][y];
-          let rook = this.board[x][y] as Piece;
+          let piece = board[i][y];
+          let rook = board[x][y] as Piece;
           if (piece !== null && piece.team === rook.team) {
             break;
           }
@@ -581,8 +583,8 @@ export class Referee {
         }
         i = x - 1;
         while (i >= 0 && i < 8) {
-          let piece = this.board[i][y];
-          let rook = this.board[x][y] as Piece;
+          let piece = board[i][y];
+          let rook = board[x][y] as Piece;
           if (piece !== null && piece.team === rook.team) {
             break;
           }
@@ -596,8 +598,8 @@ export class Referee {
         }
         let j: number = y + 1;
         while (j >= 0 && j < 8) {
-          let piece = this.board[x][j];
-          let rook = this.board[x][y] as Piece;
+          let piece = board[x][j];
+          let rook = board[x][y] as Piece;
           if (piece !== null && piece.team === rook.team) {
             break;
           }
@@ -611,8 +613,8 @@ export class Referee {
         }
         j = y - 1;
         while (j >= 0 && j < 8) {
-          let piece = this.board[x][j];
-          let rook = this.board[x][y] as Piece;
+          let piece = board[x][j];
+          let rook = board[x][y] as Piece;
           if (piece !== null && piece.team === rook.team) {
             break;
           }
@@ -643,14 +645,14 @@ export class Referee {
           const nx = x + dx;
           const ny = y + dy;
           let isOutOfBound = nx < 0 || nx > 7 || ny < 0 || ny > 7;
-          if (!isOutOfBound && this.board[nx][ny] === null) {
+          if (!isOutOfBound && board[nx][ny] === null) {
             temp[nx][ny] = "MOVE";
           }
           if (
             !isOutOfBound &&
-            this.board[nx][ny] !== null &&
-            this.board[x][y] &&
-            this.board[nx][ny].team !== this.board[x][y].team
+            board[nx][ny] !== null &&
+            board[x][y] &&
+            board[nx][ny].team !== board[x][y].team
           ) {
             temp[nx][ny] = "ATTACK";
           }
@@ -671,20 +673,12 @@ export class Referee {
           let ny = y + dy;
           let isOutOfBound: boolean = !(nx >= 0 && nx < 8 && ny >= 0 && ny < 8);
           while (!isOutOfBound) {
-            let piece = this.board[nx][ny];
-            if (
-              piece &&
-              this.board[x][y] &&
-              piece.team !== this.board[x][y].team
-            ) {
+            let piece = board[nx][ny];
+            if (piece && board[x][y] && piece.team !== board[x][y].team) {
               temp[nx][ny] = "ATTACK";
               break;
             }
-            if (
-              piece &&
-              this.board[x][y] &&
-              piece.team === this.board[x][y].team
-            ) {
+            if (piece && board[x][y] && piece.team === board[x][y].team) {
               break;
             }
             temp[nx][ny] = "MOVE";
@@ -713,20 +707,12 @@ export class Referee {
           const ny = y + dy;
           let isOutOfBound: boolean = !(nx >= 0 && nx < 8 && ny >= 0 && ny < 8);
           if (!isOutOfBound) {
-            let piece = this.board[nx][ny];
-            if (
-              piece &&
-              this.board[x][y] &&
-              piece.team !== this.board[x][y].team
-            ) {
+            let piece = board[nx][ny];
+            if (piece && board[x][y] && piece.team !== board[x][y].team) {
               temp[nx][ny] = "ATTACK";
               return [dx, dy];
             }
-            if (
-              piece &&
-              this.board[x][y] &&
-              piece.team === this.board[x][y].team
-            ) {
+            if (piece && board[x][y] && piece.team === board[x][y].team) {
               return [dx, dy];
             }
             temp[nx][ny] = "MOVE";
@@ -749,20 +735,12 @@ export class Referee {
           let ny = y + dy;
           let isOutOfBound: boolean = !(nx >= 0 && nx < 8 && ny >= 0 && ny < 8);
           while (!isOutOfBound) {
-            let piece = this.board[nx][ny];
-            if (
-              piece &&
-              this.board[x][y] &&
-              piece.team !== this.board[x][y].team
-            ) {
+            let piece = board[nx][ny];
+            if (piece && board[x][y] && piece.team !== board[x][y].team) {
               temp[nx][ny] = "ATTACK";
               break;
             }
-            if (
-              piece &&
-              this.board[x][y] &&
-              piece.team === this.board[x][y].team
-            ) {
+            if (piece && board[x][y] && piece.team === board[x][y].team) {
               break;
             }
             temp[nx][ny] = "MOVE";
@@ -774,8 +752,8 @@ export class Referee {
           let i: number = x + 1;
           while (i >= 0 && i < 8) {
             //since you acess . key typescript doesnt understand it same thing use var first
-            let piece = this.board[i][y];
-            let rook = this.board[x][y] as Piece;
+            let piece = board[i][y];
+            let rook = board[x][y] as Piece;
             if (piece !== null && piece.team === rook.team) {
               break;
             }
@@ -788,8 +766,8 @@ export class Referee {
           }
           i = x - 1;
           while (i >= 0 && i < 8) {
-            let piece = this.board[i][y];
-            let rook = this.board[x][y] as Piece;
+            let piece = board[i][y];
+            let rook = board[x][y] as Piece;
             if (piece !== null && piece.team === rook.team) {
               break;
             }
@@ -803,8 +781,8 @@ export class Referee {
           }
           let j: number = y + 1;
           while (j >= 0 && j < 8) {
-            let piece = this.board[x][j];
-            let rook = this.board[x][y] as Piece;
+            let piece = board[x][j];
+            let rook = board[x][y] as Piece;
             if (piece !== null && piece.team === rook.team) {
               break;
             }
@@ -818,8 +796,8 @@ export class Referee {
           }
           j = y - 1;
           while (j >= 0 && j < 8) {
-            let piece = this.board[x][j];
-            let rook = this.board[x][y] as Piece;
+            let piece = board[x][j];
+            let rook = board[x][y] as Piece;
             if (piece !== null && piece.team === rook.team) {
               break;
             }
@@ -835,142 +813,141 @@ export class Referee {
         break;
       }
     }
+
     return temp;
   }
 
-  extractDangerAreas(team: "BLACK" | "WHITE"): Array<Array<"DANGER" | "SAFE">> {
-    const danger: Array<Array<"DANGER" | "SAFE">> = [...Array(8)].map(() =>
-      Array(8).fill("SAFE"),
-    );
+  // extractDangerAreas(team: "BLACK" | "WHITE"): Array<Array<"DANGER" | "SAFE">> {
+  //   const danger: Array<Array<"DANGER" | "SAFE">> = [...Array(8)].map(() =>
+  //     Array(8).fill("SAFE"),
+  //   );
 
-    const mark = (x: number, y: number) => {
-      if (x >= 0 && x < 8 && y >= 0 && y < 8) {
-        danger[x][y] = "DANGER";
-      }
-    };
+  //   const mark = (x: number, y: number) => {
+  //     if (x >= 0 && x < 8 && y >= 0 && y < 8) {
+  //       danger[x][y] = "DANGER";
+  //     }
+  //   };
 
-    for (let x = 0; x < 8; x++) {
-      for (let y = 0; y < 8; y++) {
-        const piece = this.board[x][y];
+  //   for (let x = 0; x < 8; x++) {
+  //     for (let y = 0; y < 8; y++) {
+  //       const piece = board[x][y];
 
-        if (!piece || piece.team !== team) continue;
+  //       if (!piece || piece.team !== team) continue;
 
-        switch (piece.type) {
-          case "PAWN": {
-            const dir = team === "BLACK" ? 1 : -1;
+  //       switch (piece.type) {
+  //         case "PAWN": {
+  //           const dir = team === "BLACK" ? 1 : -1;
 
-            mark(x + dir, y + 1);
-            mark(x + dir, y - 1);
+  //           mark(x + dir, y + 1);
+  //           mark(x + dir, y - 1);
 
-            break;
-          }
+  //           break;
+  //         }
 
-          case "KNIGHT": {
-            const moves = [
-              [2, 1],
-              [2, -1],
-              [-2, 1],
-              [-2, -1],
-              [1, 2],
-              [1, -2],
-              [-1, 2],
-              [-1, -2],
-            ];
+  //         case "KNIGHT": {
+  //           const moves = [
+  //             [2, 1],
+  //             [2, -1],
+  //             [-2, 1],
+  //             [-2, -1],
+  //             [1, 2],
+  //             [1, -2],
+  //             [-1, 2],
+  //             [-1, -2],
+  //           ];
 
-            for (const [dx, dy] of moves) {
-              mark(x + dx, y + dy);
-            }
+  //           for (const [dx, dy] of moves) {
+  //             mark(x + dx, y + dy);
+  //           }
 
-            break;
-          }
+  //           break;
+  //         }
 
-          case "KING": {
-            const moves = [
-              [1, 0],
-              [-1, 0],
-              [0, 1],
-              [0, -1],
-              [1, 1],
-              [1, -1],
-              [-1, 1],
-              [-1, -1],
-            ];
+  //         case "KING": {
+  //           const moves = [
+  //             [1, 0],
+  //             [-1, 0],
+  //             [0, 1],
+  //             [0, -1],
+  //             [1, 1],
+  //             [1, -1],
+  //             [-1, 1],
+  //             [-1, -1],
+  //           ];
 
-            for (const [dx, dy] of moves) {
-              mark(x + dx, y + dy);
-            }
+  //           for (const [dx, dy] of moves) {
+  //             mark(x + dx, y + dy);
+  //           }
 
-            break;
-          }
+  //           break;
+  //         }
 
-          case "ROOK":
-          case "QUEEN": {
-            const directions = [
-              [1, 0],
-              [-1, 0],
-              [0, 1],
-              [0, -1],
-            ];
+  //         case "ROOK":
+  //         case "QUEEN": {
+  //           const directions = [
+  //             [1, 0],
+  //             [-1, 0],
+  //             [0, 1],
+  //             [0, -1],
+  //           ];
 
-            for (const [dx, dy] of directions) {
-              let nx = x + dx;
-              let ny = y + dy;
+  //           for (const [dx, dy] of directions) {
+  //             let nx = x + dx;
+  //             let ny = y + dy;
 
-              while (nx >= 0 && nx < 8 && ny >= 0 && ny < 8) {
-                mark(nx, ny);
+  //             while (nx >= 0 && nx < 8 && ny >= 0 && ny < 8) {
+  //               mark(nx, ny);
 
-                if (this.board[nx][ny]) break;
+  //               if (board[nx][ny]) break;
 
-                nx += dx;
-                ny += dy;
-              }
-            }
+  //               nx += dx;
+  //               ny += dy;
+  //             }
+  //           }
 
-            if (piece.type === "ROOK") break;
-          }
+  //           if (piece.type === "ROOK") break;
+  //         }
 
-          case "BISHOP":
-          case "QUEEN": {
-            const directions = [
-              [1, 1],
-              [1, -1],
-              [-1, 1],
-              [-1, -1],
-            ];
+  //         case "BISHOP":
+  //         case "QUEEN": {
+  //           const directions = [
+  //             [1, 1],
+  //             [1, -1],
+  //             [-1, 1],
+  //             [-1, -1],
+  //           ];
 
-            for (const [dx, dy] of directions) {
-              let nx = x + dx;
-              let ny = y + dy;
+  //           for (const [dx, dy] of directions) {
+  //             let nx = x + dx;
+  //             let ny = y + dy;
 
-              while (nx >= 0 && nx < 8 && ny >= 0 && ny < 8) {
-                mark(nx, ny);
+  //             while (nx >= 0 && nx < 8 && ny >= 0 && ny < 8) {
+  //               mark(nx, ny);
 
-                if (this.board[nx][ny]) break;
+  //               if (board[nx][ny]) break;
 
-                nx += dx;
-                ny += dy;
-              }
-            }
+  //               nx += dx;
+  //               ny += dy;
+  //             }
+  //           }
 
-            break;
-          }
-        }
-      }
-    }
+  //           break;
+  //         }
+  //       }
+  //     }
+  //   }
 
-    return danger;
-  }
+  //   return danger;
+  // }
 
-  isChecked(team: "BLACK" | "WHITE", board?: (null | Piece)[][]): boolean {
-    const localBoard = board ? board : this.board;
-
+  isChecked(team: "BLACK" | "WHITE", board: (Piece | null)[][]): boolean {
     let kingX = -1;
     let kingY = -1;
 
     // Find the king of the team
     for (let x = 0; x < 8; x++) {
       for (let y = 0; y < 8; y++) {
-        const piece = localBoard[x][y];
+        const piece = board[x][y];
 
         if (piece && piece.type === "KING" && piece.team === team) {
           kingX = x;
@@ -991,13 +968,15 @@ export class Referee {
     // Check every enemy piece
     for (let x = 0; x < 8; x++) {
       for (let y = 0; y < 8; y++) {
-        const piece = localBoard[x][y];
+        const piece = board[x][y];
 
         if (!piece || piece.team !== enemyTeam) continue;
 
-        const moves = this.extractDangerPlacements(x, y);
-
+        const moves = this.extractDangerPlacements(x, y, board);
+        // console.log("danger zones for piece ", piece, moves);
         if (moves[kingX][kingY] === "ATTACK") {
+          // console.log("piece can attack enemy king ", piece);
+          // console.log("king is at", kingX, kingY);
           return true;
         }
       }
@@ -1006,14 +985,51 @@ export class Referee {
     return false;
   }
 
-  findKing(team: "BLACK" | "WHITE") {
+  canEscapeCheck(
+    team: "BLACK" | "WHITE",
+    board: (Piece | null)[][],
+    isMoveBoard: boolean[][],
+  ): boolean {
+    // console.log("can this team escape ? ", team);
+    for (let x = 0; x < 8; x++) {
+      for (let y = 0; y < 8; y++) {
+        const piece = board[x][y];
+
+        if (!piece || piece.team !== team) continue;
+
+        const moves = this.extractCorrectPlacements(x, y, board, isMoveBoard);
+
+        // console.log("trying for this piece ", piece);
+        for (let tx = 0; tx < 8; tx++) {
+          for (let ty = 0; ty < 8; ty++) {
+            if (moves[tx][ty] === "INVALID") continue;
+
+            const tempBoard = structuredClone(board);
+
+            // make move
+            tempBoard[tx][ty] = tempBoard[x][y];
+            tempBoard[x][y] = null;
+
+            // if king survives, check can be escaped
+            if (!this.isChecked(team, tempBoard)) {
+              return true;
+            }
+          }
+        }
+      }
+    }
+
+    return false;
+  }
+
+  findKing(team: "BLACK" | "WHITE", board: (Piece | null)[][]) {
     let kingX = -1;
     let kingY = -1;
 
     // Find the king of the team
     for (let x = 0; x < 8; x++) {
       for (let y = 0; y < 8; y++) {
-        const piece = this.board[x][y];
+        const piece = board[x][y];
 
         if (piece && piece.type === "KING" && piece.team === team) {
           kingX = x;

@@ -111,7 +111,6 @@ const Shell = ({ children }: { children: React.ReactNode }) => {
                     label: "Dashboard",
                     resource: "/dashboard",
                   },
-                  { icon: PlayIcon, label: "Play", resource: "/play" },
                 ]
           }
         ></SideBar>

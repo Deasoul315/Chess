@@ -288,11 +288,28 @@ export class Referee {
           [0, 2],
         ];
 
+        let kPos = {
+          x: targetPiece.team === "BLACK" ? 0 : 7,
+          y: 4,
+        };
+        let rRookPos = {
+          x: targetPiece.team === "BLACK" ? 0 : 7,
+          y: 7,
+        };
+        let lRookPos = {
+          x: targetPiece.team === "BLACK" ? 0 : 7,
+          y: 0,
+        };
         const piece = board[x][y];
         if (!piece) break;
-
-        if (isMoveBoard[x][y]) break;
-        if (!isMoveBoard[x][7] && !board[x][y + 1] && !board[x][y + 2]) {
+        console.log("is move board", isMoveBoard);
+        if (isMoveBoard[kPos.x][kPos.y]) break;
+        console.log("allow");
+        if (
+          !isMoveBoard[rRookPos.x][rRookPos.y] &&
+          !board[x][y + 1] &&
+          !board[x][y + 2]
+        ) {
           const tempBoard = structuredClone(board);
           let isCastling = true;
           isCastling = isCastling && !this.isChecked(piece.team, tempBoard);
@@ -307,7 +324,7 @@ export class Referee {
           }
         }
         if (
-          !isMoveBoard[x][0] &&
+          !isMoveBoard[lRookPos.x][lRookPos.y] &&
           !board[x][y - 1] &&
           !board[x][y - 2] &&
           !board[x][y - 3]
@@ -419,6 +436,24 @@ export class Referee {
         break;
       }
     }
+
+    for (let tx = 0; tx < 8; tx++) {
+      for (let ty = 0; ty < 8; ty++) {
+        if (temp[tx][ty] === "INVALID") continue;
+
+        const tempBoard = structuredClone(board);
+
+        // make move
+        tempBoard[tx][ty] = tempBoard[x][y];
+        tempBoard[x][y] = null;
+
+        // if king survives, check can be escaped
+        if (this.isChecked(targetPiece.team, tempBoard)) {
+          temp[tx][ty] = "INVALID";
+        }
+      }
+    }
+
     return temp;
   }
 
@@ -779,6 +814,7 @@ export class Referee {
         break;
       }
     }
+
     return temp;
   }
 
@@ -986,6 +1022,65 @@ export class Referee {
     }
 
     return false;
+  }
+
+  private isInsufficientMaterial(board: (Piece | null)[][]): boolean {
+    const pieces: {
+      type: Piece["type"];
+      team: Piece["team"];
+      x: number;
+      y: number;
+    }[] = [];
+
+    for (let x = 0; x < 8; x++) {
+      for (let y = 0; y < 8; y++) {
+        const piece = board[x][y];
+
+        if (piece) {
+          pieces.push({
+            type: piece.type,
+            team: piece.team,
+            x,
+            y,
+          });
+        }
+      }
+    }
+
+    // Remove kings
+    const nonKings = pieces.filter((p) => p.type !== "KING");
+
+    // K vs K
+    if (nonKings.length === 0) {
+      return true;
+    }
+
+    // K+B vs K
+    if (
+      nonKings.length === 1 &&
+      (nonKings[0].type === "BISHOP" || nonKings[0].type === "KNIGHT")
+    ) {
+      return true;
+    }
+
+    // K+B vs K+B (same color bishops)
+    if (nonKings.length === 2 && nonKings.every((p) => p.type === "BISHOP")) {
+      const bishop1 = nonKings[0];
+      const bishop2 = nonKings[1];
+
+      const color1 = (bishop1.x + bishop1.y) % 2;
+      const color2 = (bishop2.x + bishop2.y) % 2;
+
+      if (color1 === color2) {
+        return true;
+      }
+    }
+
+    return false;
+  }
+
+  public isDraw(board: (Piece | null)[][]) {
+    return this.isInsufficientMaterial(board);
   }
 
   findKing(team: "BLACK" | "WHITE", board: (Piece | null)[][]) {

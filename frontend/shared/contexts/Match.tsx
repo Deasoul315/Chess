@@ -5,7 +5,6 @@ import React from "react";
 import { Domain, Match, Message, Piece, PieceType } from "../constants/types";
 import { PIECES_TYPE } from "../constants/constants";
 import { Referee } from "../features/referee/referee";
-console.log("call");
 export function createInitBoard(): (Piece | null)[][] {
   const board: (Piece | null)[][] = Array.from({ length: 8 }, () =>
     Array.from({ length: 8 }, () => null),
@@ -56,6 +55,7 @@ export function createInitBoard(): (Piece | null)[][] {
 }
 
 const initMatch: Match = {
+  lastMove: null,
   role: null,
   board: createInitBoard(),
   isMoveBoard: Array(8).fill(Array(8).fill(false)),
@@ -81,15 +81,24 @@ const initMatch: Match = {
     public: [],
     private: [],
   },
+  seenIndicies: {
+    private: 0,
+    public: 0,
+  },
+  activeChat: null,
 };
 const ACTIONS = {
   PLACE_PIECE: "PLACE_PIECE",
+  PLACE_PIECES: "PLACE_PIECES",
   CONFIGURE: "CONFIGURE",
   START_GAME: "START_GAME",
   SPECTATE_INIT: "SPECTATE_INIT",
   ADD_MESSAGE: "ADD_MESSAGE",
   UPDATE_TIME: "UPDATE_TIME",
   END: "END",
+  SWITCH_CHAT: "SWITCH_CHAT",
+  RESYNC: "RESYNC",
+  RESET: "RESET",
 } as const;
 type Action =
   | {
@@ -144,7 +153,7 @@ type Action =
   | {
       type: typeof ACTIONS.END;
       params: {
-        winner: "HOST" | "GUEST";
+        winner: "HOST" | "GUEST" | "DRAW";
       };
     }
   | {
@@ -153,6 +162,34 @@ type Action =
         host: number;
         guest: number;
       };
+    }
+  | {
+      type: typeof ACTIONS.SWITCH_CHAT;
+      params: {
+        chatType: "PUBLIC" | "PRIVATE";
+      };
+    }
+  | {
+      type: typeof ACTIONS.PLACE_PIECES;
+      params: {
+        movements: { fromX: number; fromY: number; toX: number; toY: number }[];
+      };
+    }
+  | {
+      type: typeof ACTIONS.RESYNC;
+      params: {
+        teamInTurn: "GUEST" | "HOST";
+        board: (null | {
+          type: PieceType;
+          team: "BLACK" | "WHITE";
+        })[][];
+        hostTime: number;
+        guestTime: number;
+      };
+    }
+  | {
+      type: typeof ACTIONS.RESET;
+      params: {};
     };
 function matchReducer(prevState: Match, action: Action): Match {
   switch (action.type) {
@@ -211,22 +248,78 @@ function matchReducer(prevState: Match, action: Action): Match {
 
       const newTeamInTurn = prevState.teamInTurn === "GUEST" ? "HOST" : "GUEST";
 
-      console.log(
-        "new host time",
-        (prevState.time.host ?? 0) +
-          (prevState.teamInTurn === "HOST" ? prevState.increment : 0),
-      );
-      console.log(
-        "new guest time ",
-        (prevState.time.guest ?? 0) +
-          (prevState.teamInTurn === "GUEST" ? prevState.increment : 0),
-      );
       return {
         ...prevState,
         board: newBoard,
         teamInTurn: newTeamInTurn,
         log: newLog,
         isMoveBoard: newIsMoveBoard,
+        lastMove: {
+          fromX,
+          fromY,
+          toX,
+          toY,
+        },
+        time: {
+          host:
+            (prevState.time.host ?? 0) +
+            (prevState.teamInTurn === "HOST" ? prevState.increment : 0),
+          guest:
+            (prevState.time.guest ?? 0) +
+            (prevState.teamInTurn === "GUEST" ? prevState.increment : 0),
+        },
+      };
+    }
+    case "PLACE_PIECES": {
+      let newBoard = prevState.board.map((row) => [...row]);
+      let newIsMoveBoard = prevState.isMoveBoard.map((row) => [...row]);
+
+      for (const move of action.params.movements) {
+        const { fromX, fromY, toX, toY } = move;
+
+        const piece = newBoard[fromX][fromY];
+
+        if (!piece) continue;
+
+        newBoard[toX][toY] = piece;
+        newBoard[fromX][fromY] = null;
+
+        newIsMoveBoard[fromX][fromY] = true;
+
+        const isPromote = piece.type === "PAWN" && (toX === 0 || toX === 7);
+
+        if (isPromote) {
+          newBoard[toX][toY] = {
+            image: `/pieces/queen_${piece.team === "WHITE" ? "w" : "b"}.png`,
+            type: "QUEEN",
+            team: piece.team,
+          };
+        }
+      }
+
+      const lastMove =
+        action.params.movements[action.params.movements.length - 1];
+
+      const newLog = {
+        guest: [...prevState.log.guest],
+        host: [...prevState.log.host],
+      };
+
+      if (prevState.teamInTurn === "GUEST") {
+        newLog.guest.push(...action.params.movements);
+      } else {
+        newLog.host.push(...action.params.movements);
+      }
+
+      const newTeamInTurn = prevState.teamInTurn === "GUEST" ? "HOST" : "GUEST";
+
+      return {
+        ...prevState,
+        board: newBoard,
+        isMoveBoard: newIsMoveBoard,
+        log: newLog,
+        teamInTurn: newTeamInTurn,
+        lastMove,
         time: {
           host:
             (prevState.time.host ?? 0) +
@@ -261,6 +354,7 @@ function matchReducer(prevState: Match, action: Action): Match {
         },
         hostName: action.params.hostName,
         guestName: action.params.guestName,
+        activeChat: "PRIVATE",
       };
     }
     case "SPECTATE_INIT": {
@@ -310,7 +404,6 @@ function matchReducer(prevState: Match, action: Action): Match {
           });
         },
       );
-      console.log("NEW BOARD ", res);
       return {
         ...prevState,
         socket: action.params.socket,
@@ -321,10 +414,16 @@ function matchReducer(prevState: Match, action: Action): Match {
           guest: prevState.turnTime,
         },
         role: "SPECTATOR",
+        activeChat: "PUBLIC",
       };
     }
     case "ADD_MESSAGE": {
       let messages: null | { private: Message[]; public: Message[] } = null;
+      let newSeenIndicies = {
+        public: prevState.seenIndicies.public,
+        private: prevState.seenIndicies.private,
+      };
+
       if (action.params.domain === "PRIVATE") {
         messages = {
           public: prevState.messages.public,
@@ -348,18 +447,107 @@ function matchReducer(prevState: Match, action: Action): Match {
           ],
         };
       }
+
+      if (prevState.activeChat === "PRIVATE") {
+        newSeenIndicies.private = messages.private.length;
+      } else {
+        newSeenIndicies.public = messages.public.length;
+      }
       return {
         ...prevState,
         messages: messages,
+        seenIndicies: newSeenIndicies,
+      };
+    }
+    case "SWITCH_CHAT": {
+      let newSeenIndicies = {
+        public: prevState.seenIndicies.public,
+        private: prevState.seenIndicies.private,
+      };
+
+      if (action.params.chatType === "PRIVATE") {
+        newSeenIndicies.private = prevState.messages.private.length;
+      } else {
+        newSeenIndicies.public = prevState.messages.public.length;
+      }
+      return {
+        ...prevState,
+        activeChat: action.params.chatType,
+        seenIndicies: newSeenIndicies,
       };
     }
     case "UPDATE_TIME": {
       return {
         ...prevState,
         time: {
-          host: action.params.host,
-          guest: action.params.guest,
+          host: Math.max(action.params.host, 0),
+          guest: Math.max(0, action.params.guest),
         },
+      };
+    }
+    case "RESYNC": {
+      const res = action.params.board.map(
+        (row: ({ type: PieceType; team: "BLACK" | "WHITE" } | null)[]) => {
+          return row.map((element) => {
+            if (!element) return null;
+
+            let ref = "";
+
+            switch (element.type) {
+              case "PAWN":
+                ref = "/pieces/pawn";
+                break;
+              case "ROOK":
+                ref = "/pieces/rook";
+                break;
+              case "KNIGHT":
+                ref = "/pieces/knight";
+                break;
+              case "BISHOP":
+                ref = "/pieces/bishop";
+                break;
+              case "QUEEN":
+                ref = "/pieces/queen";
+                break;
+              case "KING":
+                ref = "/pieces/king";
+                break;
+              default:
+                ref = "";
+            }
+
+            if (element.team === "BLACK") {
+              ref += "_b.png";
+            } else if (element.team === "WHITE") {
+              ref += "_w.png";
+            } else {
+              console.warn("received weird piece team");
+            }
+
+            return {
+              type: element.type,
+              team: element.team,
+              image: ref,
+            };
+          });
+        },
+      );
+      return {
+        ...prevState,
+        teamInTurn: action.params.teamInTurn,
+        board: res,
+        time: {
+          host: action.params.hostTime,
+          guest: action.params.guestTime,
+        },
+      };
+    }
+    case "RESET": {
+      if (prevState.socket) {
+        prevState.socket.close();
+      }
+      return {
+        ...initMatch,
       };
     }
     case "END": {

@@ -62,6 +62,14 @@ export class GameMaster {
     return this._board;
   }
 
+  get hostTime() {
+    return this._hostTime;
+  }
+
+  get guestTime() {
+    return this._guestTime;
+  }
+
   public setTime(value: {
     guestTime: number;
     hostTime: number;
@@ -105,12 +113,44 @@ export class GameMaster {
     }
   }
 
+  public isTimeOut() {
+    const isTimeLegit = this.isTimeLegit();
+    if (isTimeLegit === "GUEST") {
+      this.endGame("HOST");
+      return true;
+    } else if (isTimeLegit === "HOST") {
+      this.endGame("GUEST");
+      return true;
+    }
+    return false;
+  }
+
   private togglePlayerInTurn() {
     if (this._playerInTurn === "GUEST") {
       this._playerInTurn = "HOST";
     } else {
       this._playerInTurn = "GUEST";
     }
+  }
+
+  public hostTimeNow() {
+    if (!this._hostRegisterTime || !this._hostTime)
+      throw "Time cannot be caculated if not initialized";
+    if (this._playerInTurn === "HOST") {
+      const elapsedTime = Date.now() - this._hostRegisterTime;
+      return this._hostTime - elapsedTime;
+    }
+    return this._hostTime;
+  }
+
+  public guestTimeNow() {
+    if (!this._guestRegisterTime || !this._guestTime)
+      throw "Time cannot be caculated if not initialized";
+    if (this._playerInTurn === "GUEST") {
+      const elapsedTime = Date.now() - this._guestRegisterTime;
+      return this._guestTime - elapsedTime;
+    }
+    return this._guestTime;
   }
 
   private updateTimer() {
@@ -195,6 +235,9 @@ export class GameMaster {
     toX: number,
     toY: number,
   ): boolean {
+    let referee = new Referee();
+    let board = structuredClone(this._board);
+
     if (this._winner) return false;
 
     const isTimeLegit = this.isTimeLegit();
@@ -204,10 +247,10 @@ export class GameMaster {
     } else if (isTimeLegit === "HOST") {
       this.endGame("GUEST");
       return false;
+    } else if (referee.isDraw(board)) {
+      this.endGame("DRAW");
+      return false;
     }
-
-    let board = structuredClone(this._board);
-    let referee = new Referee();
 
     logger.info("[MOVE_ATTEMPT]", {
       username,
@@ -254,12 +297,6 @@ export class GameMaster {
       this.board,
       this.isMoveBoard,
     );
-    let isChecked = referee.isChecked(
-      this.playerInTurn === "HOST"
-        ? this._hostPlayer.team
-        : this._guestPlayer.team,
-      this.board,
-    );
 
     if (!canMove) {
       logger.warn("[MOVE_REJECTED] Illegal move", {
@@ -270,26 +307,24 @@ export class GameMaster {
       return false;
     }
 
+    board[toX][toY] = board[fromX][fromY];
+    board[fromX][fromY] = null;
+    referee = new Referee();
+    // console.log(board);
+    const isChecked = referee.isChecked(
+      this.playerInTurn === "HOST"
+        ? this._hostPlayer.team
+        : this._guestPlayer.team,
+      board,
+    );
     if (isChecked) {
-      board[toX][toY] = board[fromX][fromY];
-      board[fromX][fromY] = null;
-      referee = new Referee();
-      // console.log(board);
-      isChecked = referee.isChecked(
-        this.playerInTurn === "HOST"
-          ? this._hostPlayer.team
-          : this._guestPlayer.team,
-        this.board,
-      );
-      if (isChecked) {
-        logger.warn("[MOVE_REJECTED] can be eaten this move", {
-          username,
-          from: { x: fromX, y: fromY },
-          to: { x: toX, y: toY },
-        });
+      logger.warn("[MOVE_REJECTED] can be eaten this move", {
+        username,
+        from: { x: fromX, y: fromY },
+        to: { x: toX, y: toY },
+      });
 
-        return false;
-      }
+      return false;
     }
 
     let isPromote = piece.type === "PAWN" && (toX === 0 || toX === 7);
@@ -322,6 +357,13 @@ export class GameMaster {
         from: { x: fromX, y: fromY },
         to: { x: toX, y: toY },
       });
+    } else if (referee.isDraw(board)) {
+      logger.warn(`DRAW`, {
+        username,
+        from: { x: fromX, y: fromY },
+        to: { x: toX, y: toY },
+      });
+      this.endGame("DRAW");
     }
 
     this.isMoveBoard[fromX][fromY] = true;
@@ -337,5 +379,13 @@ export class GameMaster {
     });
 
     return true;
+  }
+
+  public surrender(userName: string) {
+    if (this.hostPlayer.username === userName) {
+      this._winner = "GUEST";
+    } else {
+      this._winner = "HOST";
+    }
   }
 }

@@ -20,7 +20,12 @@ const Timer = ({
 
   return (
     <Stack>
-      <Text size="lg">{timeFormatter(time)}</Text>
+      <Text size="lg" visibleFrom="md">
+        {timeFormatter(time)}
+      </Text>
+      <Text size="md" hiddenFrom="md">
+        {timeFormatter(time)}
+      </Text>
     </Stack>
   );
 };

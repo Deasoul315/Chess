@@ -7,6 +7,7 @@ import {
   passwordRegex,
   userNameRegex,
 } from "../constants/constants";
+import { useMediaQuery } from "@mantine/hooks";
 
 const UserSignUpForm = () => {
   const userData = useUserDataContext();
@@ -66,13 +67,27 @@ const UserSignUpForm = () => {
       setError(err instanceof Error ? err.message : "Something went wrong");
     }
   }
+  const isMobile = useMediaQuery("(max-width: 768px)");
 
   return (
     <>
       {mutation.isSuccess && (
         <Stack align="center">
-          <Title order={4}>Creation Complete!</Title>
-          <Text size="lg">Welcome {userData.value.name}</Text>
+          <Title order={5} hiddenFrom="md">
+            Creation Complete!
+          </Title>
+
+          <Title order={4} visibleFrom="md">
+            Creation Complete!
+          </Title>
+
+          <Text size="md" hiddenFrom="md">
+            Welcome {userData.value.name}
+          </Text>
+
+          <Text size="lg" visibleFrom="md">
+            Welcome {userData.value.name}
+          </Text>
         </Stack>
       )}
 
@@ -83,13 +98,12 @@ const UserSignUpForm = () => {
               name="userName"
               label="Username"
               placeholder="username123"
+              size={isMobile ? "md" : "lg"}
               styles={{
                 label: {
-                  fontSize: "var(--text-lg)",
                   fontWeight: "var(--bold)",
                 },
                 input: {
-                  fontSize: "var(--text-lg)",
                   fontWeight: "var(--bold)",
                 },
               }}
@@ -99,13 +113,12 @@ const UserSignUpForm = () => {
               name="name"
               label="Name"
               placeholder="Mohammad"
+              size={isMobile ? "md" : "lg"}
               styles={{
                 label: {
-                  fontSize: "var(--text-lg)",
                   fontWeight: "var(--bold)",
                 },
                 input: {
-                  fontSize: "var(--text-lg)",
                   fontWeight: "var(--bold)",
                 },
               }}
@@ -116,13 +129,12 @@ const UserSignUpForm = () => {
               label="Password"
               placeholder="password"
               type="password"
+              size={isMobile ? "md" : "lg"}
               styles={{
                 label: {
-                  fontSize: "var(--text-lg)",
                   fontWeight: "var(--bold)",
                 },
                 input: {
-                  fontSize: "var(--text-lg)",
                   fontWeight: "var(--bold)",
                 },
               }}
@@ -132,12 +144,17 @@ const UserSignUpForm = () => {
               <Button
                 type="submit"
                 color="var(--primary)"
-                styles={{
-                  label: {
-                    fontSize: "var(--text-lg)",
-                    fontWeight: "var(--bold)",
-                  },
-                }}
+                size="md"
+                hiddenFrom="md"
+              >
+                submit
+              </Button>
+
+              <Button
+                type="submit"
+                color="var(--primary)"
+                size={isMobile ? "md" : "lg"}
+                visibleFrom="md"
               >
                 submit
               </Button>

@@ -1,6 +1,8 @@
 "use client";
 
 import { AGATE_GROTESK } from "@/shared/constants/constants";
+import { useAppContext } from "@/shared/contexts/App";
+import { useUserDataContext } from "@/shared/contexts/UserData";
 import { useGSAP } from "@gsap/react";
 import {
   Box,
@@ -17,6 +19,7 @@ import {
   Text,
   Title,
 } from "@mantine/core";
+import { useMediaQuery } from "@mantine/hooks";
 import { GameControllerIcon } from "@phosphor-icons/react";
 
 import { gsap } from "gsap";
@@ -31,6 +34,8 @@ function PlayNowSection() {
   const sectionRef = useRef(null);
   const contentRef = useRef(null);
   const buttonRef = useRef(null);
+  const app = useAppContext();
+  const user = useUserDataContext();
 
   useGSAP(() => {
     if (!sectionRef.current || !contentRef.current || !buttonRef.current)
@@ -64,39 +69,65 @@ function PlayNowSection() {
   }, []);
 
   return (
-    <Stack
-      align="center"
-      justify="center"
-      h={"100vh"}
-      w={"100wh"}
-      className={AGATE_GROTESK.className}
-    >
+    <Stack align="center" justify="center" h={"100vh"} w={"100wh"}>
       <Grid ref={sectionRef} py={100}>
         <Grid.Col span={12}>
           <Center>
             <Stack ref={contentRef} align="center" gap="md">
-              <Title order={2} hiddenFrom="md" ta="center">
+              <Title order={4} hiddenFrom="md" ta="center">
                 Ready to Play?
               </Title>
+
               <Title order={2} visibleFrom="md" ta="center">
                 Ready to Play?
               </Title>
-              <Text opacity={0.7} size="lg" ta="center" maw={500}>
+
+              <Text
+                opacity={0.7}
+                size="md"
+                ta="center"
+                maw={500}
+                hiddenFrom="md"
+              >
                 Challenge yourself in a game of chess. Improve your strategy,
                 learn new tactics, and play against strong opponents.
               </Text>
 
-              <Link href={"/play"}>
+              <Text
+                opacity={0.7}
+                size="lg"
+                ta="center"
+                maw={500}
+                visibleFrom="md"
+              >
+                Challenge yourself in a game of chess. Improve your strategy,
+                learn new tactics, and play against strong opponents.
+              </Text>
+
+              {user.value.userName !== "" ? (
+                <Link href={"/play"}>
+                  <Button
+                    ref={buttonRef}
+                    size="lg"
+                    radius="xl"
+                    color="primary"
+                    fz={{ base: "md", md: "lg" }}
+                  >
+                    Play Now
+                  </Button>
+                </Link>
+              ) : (
                 <Button
                   ref={buttonRef}
                   size="lg"
                   radius="xl"
                   color="primary"
-                  fw={"900"}
+                  fz={{ base: "md", md: "lg" }}
+                  onClick={app.didPressSignupOpenFn}
                 >
-                  Play Now
+                  Sign Up
                 </Button>
-              </Link>
+              )}
             </Stack>
           </Center>
         </Grid.Col>
@@ -138,7 +169,9 @@ function Counter({
     });
   });
 
-  return <Title order={3} ref={elementRef}></Title>;
+  const isDesktop = useMediaQuery("(min-width: 768px)");
+ 
+  return <Title order={isDesktop ? 3 : 5} ref={elementRef} />;
 }
 function ChessSection() {
   const imageContainerRef = useRef(null);
@@ -213,10 +246,22 @@ function ChessSection() {
       {/* TEXT */}
       <Grid.Col span={{ base: 12, lg: 6 }}>
         <Stack ref={textRef} justify="center" h="100%">
-          <Title order={2} c="primary">
+          <Title order={4} c="primary" hiddenFrom="md">
             Le Chess
           </Title>
-          <Text opacity="70%" size="lg">
+
+          <Title order={2} c="primary" visibleFrom="md">
+            Le Chess
+          </Title>
+
+          <Text opacity="70%" size="md" hiddenFrom="md">
+            Lorem ipsum dolor sit amet consectetur adipisicing elit. Fuga,
+            praesentium placeat. Aliquam, accusantium animi voluptatum omnis
+            praesentium sequi mollitia! Adipisci quam odio non ea ipsam quisquam
+            repellat debitis vel tempora.
+          </Text>
+
+          <Text opacity="70%" size="lg" visibleFrom="md">
             Lorem ipsum dolor sit amet consectetur adipisicing elit. Fuga,
             praesentium placeat. Aliquam, accusantium animi voluptatum omnis
             praesentium sequi mollitia! Adipisci quam odio non ea ipsam quisquam
@@ -313,7 +358,7 @@ const Home = () => {
             <Title
               ta={"center"}
               hiddenFrom="md"
-              order={1}
+              order={3}
               id="title"
               lh={"1.1"}
             >
@@ -348,7 +393,7 @@ const Home = () => {
             <Title
               ta={"center"}
               hiddenFrom="md"
-              order={1}
+              order={3}
               id="title"
               lh={"1.1"}
             >
@@ -366,7 +411,7 @@ const Home = () => {
           <Text
             ta={"center"}
             hiddenFrom="md"
-            size="lg"
+            size="md"
             id="description"
             opacity={"70%"}
           >
@@ -387,22 +432,22 @@ const Home = () => {
           </Text>
         </Stack>
         <Marquee gap="lg" bg={"var(--secondary)"} duration={18000}>
-          <Text size="lg">Rook</Text>
-          <Text size="lg">Knight</Text>
-          <Text size="lg">Bishop</Text>
-          <Text size="lg">Queen</Text>
-          <Text size="lg">King</Text>
-          <Text size="lg">Bishop</Text>
-          <Text size="lg">Knight</Text>
-          <Text size="lg">Rook</Text>
-          <Text size="lg">Rook</Text>
-          <Text size="lg">Knight</Text>
-          <Text size="lg">Bishop</Text>
-          <Text size="lg">Queen</Text>
-          <Text size="lg">King</Text>
-          <Text size="lg">Bishop</Text>
-          <Text size="lg">Knight</Text>
-          <Text size="lg">Rook</Text>
+          <Text fz={{ base: "md", md: "lg" }}>Rook</Text>
+          <Text fz={{ base: "md", md: "lg" }}>Knight</Text>
+          <Text fz={{ base: "md", md: "lg" }}>Bishop</Text>
+          <Text fz={{ base: "md", md: "lg" }}>Queen</Text>
+          <Text fz={{ base: "md", md: "lg" }}>King</Text>
+          <Text fz={{ base: "md", md: "lg" }}>Bishop</Text>
+          <Text fz={{ base: "md", md: "lg" }}>Knight</Text>
+          <Text fz={{ base: "md", md: "lg" }}>Rook</Text>
+          <Text fz={{ base: "md", md: "lg" }}>Rook</Text>
+          <Text fz={{ base: "md", md: "lg" }}>Knight</Text>
+          <Text fz={{ base: "md", md: "lg" }}>Bishop</Text>
+          <Text fz={{ base: "md", md: "lg" }}>Queen</Text>
+          <Text fz={{ base: "md", md: "lg" }}>King</Text>
+          <Text fz={{ base: "md", md: "lg" }}>Bishop</Text>
+          <Text fz={{ base: "md", md: "lg" }}>Knight</Text>
+          <Text fz={{ base: "md", md: "lg" }}>Rook</Text>
         </Marquee>
       </Stack>
 
@@ -415,32 +460,52 @@ const Home = () => {
       >
         <Grid.Col span={{ base: 12, sm: 6, lg: 3 }}>
           <Stack align="center" justify="center" gap={0} id="counter">
-            <Counter value={180}></Counter>
-            <Title order={3} lh={"1.1"}>
+            <Counter value={180} />
+
+            <Title order={6} lh="1.1" hiddenFrom="md">
+              Tournaments
+            </Title>
+
+            <Title order={3} lh="1.1" visibleFrom="md">
               Tournaments
             </Title>
           </Stack>
         </Grid.Col>
         <Grid.Col span={{ base: 12, sm: 6, lg: 3 }}>
           <Stack align="center" justify="center" gap={0} id="counter">
-            <Counter value={180}></Counter>
-            <Title order={3} lh={"1.1"}>
+            <Counter value={180} />
+
+            <Title order={6} lh="1.1" hiddenFrom="md">
+              Tournaments
+            </Title>
+
+            <Title order={3} lh="1.1" visibleFrom="md">
               Tournaments
             </Title>
           </Stack>
         </Grid.Col>
         <Grid.Col span={{ base: 12, sm: 6, lg: 3 }}>
           <Stack align="center" justify="center" gap={0} id="counter">
-            <Counter value={180}></Counter>
-            <Title order={3} lh={"1.1"}>
+            <Counter value={180} />
+
+            <Title order={6} lh="1.1" hiddenFrom="md">
+              Tournaments
+            </Title>
+
+            <Title order={3} lh="1.1" visibleFrom="md">
               Tournaments
             </Title>
           </Stack>
         </Grid.Col>
         <Grid.Col span={{ base: 12, sm: 6, lg: 3 }}>
           <Stack align="center" justify="center" gap={0} id="counter">
-            <Counter value={180}></Counter>
-            <Title order={3} lh={"1.1"}>
+            <Counter value={180} />
+
+            <Title order={6} lh="1.1" hiddenFrom="md">
+              Tournaments
+            </Title>
+
+            <Title order={3} lh="1.1" visibleFrom="md">
               Tournaments
             </Title>
           </Stack>

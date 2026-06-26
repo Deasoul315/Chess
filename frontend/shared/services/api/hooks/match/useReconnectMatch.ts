@@ -7,11 +7,11 @@ import { Domain, PieceColor } from "@/shared/constants/types";
 
 const matchApi = new MatchApi();
 
-export function useSpecateMatch(payload: { code: string; userName: string }) {
+export function useReconnectMatch(payload: { userName: string }) {
   const match = useMatchContext();
   return useQuery({
-    queryKey: ["spectate", payload.code],
-    queryFn: async () => await matchApi.spectateMatch(payload),
-    enabled: !!payload.code && !!payload.userName,
+    queryKey: ["reconnect", payload.userName],
+    queryFn: async () => await matchApi.reconnectMatch(payload),
+    enabled: !!payload.userName,
   });
 }

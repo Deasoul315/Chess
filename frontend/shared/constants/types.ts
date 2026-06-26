@@ -21,6 +21,7 @@ export type Message = {
 };
 
 export type Match = {
+  lastMove: MoveCoordination | null;
   role: "PLAYER" | "SPECTATOR" | null;
   board: (Piece | null)[][];
   isMoveBoard: boolean[][];
@@ -33,7 +34,7 @@ export type Match = {
   guestName: string;
   hostName: string;
   socket: null | WebSocket;
-  winner: null | "HOST" | "GUEST";
+  winner: null | "HOST" | "GUEST" | "DRAW";
   log: {
     host: MoveCoordination[];
     guest: MoveCoordination[];
@@ -46,6 +47,11 @@ export type Match = {
     private: Message[];
     public: Message[];
   };
+  seenIndicies: {
+    private: number;
+    public: number;
+  };
+  activeChat: "PUBLIC" | "PRIVATE" | null;
 };
 
 export type Domain = (typeof Domain)[keyof typeof Domain];

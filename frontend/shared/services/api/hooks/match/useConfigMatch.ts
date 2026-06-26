@@ -18,7 +18,6 @@ export function useConfigMatch() {
       turnTime: number;
     }) => await matchApi.configMatch(payload),
     onSuccess: (data, variables) => {
-      console.log("got from server ", data);
       match.dispatch({
         type: "CONFIGURE",
         params: {

@@ -1,4 +1,5 @@
 import {
+  Badge,
   Button,
   Container,
   Flex,
@@ -8,6 +9,7 @@ import {
   Tabs,
   Text,
   TextInput,
+  Title,
 } from "@mantine/core";
 import { useForm } from "@mantine/form";
 import React from "react";
@@ -15,6 +17,7 @@ import { useMatchContext } from "../contexts/Match";
 import { useUserDataContext } from "../contexts/UserData";
 import { Message } from "../constants/types";
 import { reverse } from "../utilities/utilities";
+import { useMediaQuery } from "@mantine/hooks";
 
 const Chat = ({
   messages,
@@ -36,21 +39,65 @@ const Chat = ({
         value.length > 0 && value.length < 200 ? null : "Invalid message",
     },
   });
-
+  const defaultVal =
+    match.value.activeChat === "PRIVATE" ? "private" : "public";
+  const isMobile = useMediaQuery("(max-width: 48em)");
   return (
     <Paper bg={"var(--secondary)"} p={"xs"}>
       <Tabs
-        defaultValue="private"
-        styles={{
-          tab: {
-            fontSize: "var(--header-3)",
-            fontWeight: "var(--bold)",
-          },
+        value={defaultVal}
+        onChange={(value) => {
+          let chatType: "PUBLIC" | "PRIVATE" = "PUBLIC";
+          if (!value)
+            chatType = match.value.activeChat
+              ? match.value.activeChat
+              : chatType;
+          else if (value === "private") chatType = "PRIVATE";
+          else if (value === "public") chatType = "PUBLIC";
+
+          match.dispatch({
+            type: "SWITCH_CHAT",
+            params: {
+              chatType: chatType,
+            },
+          });
         }}
       >
         <Tabs.List>
-          <Tabs.Tab value="private">private</Tabs.Tab>
-          <Tabs.Tab value="public">public</Tabs.Tab>
+          {match.value.role === "PLAYER" ? (
+            <Tabs.Tab value="private">
+              <Flex align={"center"} gap={"xs"}>
+                <Title order={isMobile ? 4 : 3}>Private</Title>
+                {match.value.messages.private.length -
+                  match.value.seenIndicies.private >
+                0 ? (
+                  <Badge bg={"red"} circle size="lg">
+                    {match.value.messages.private.length -
+                      match.value.seenIndicies.private}
+                  </Badge>
+                ) : (
+                  ""
+                )}
+              </Flex>
+            </Tabs.Tab>
+          ) : (
+            ""
+          )}
+          <Tabs.Tab value="public">
+            <Flex align={"center"} gap={"xs"}>
+              <Title order={isMobile ? 4 : 3}>Public</Title>
+              {match.value.messages.public.length -
+                match.value.seenIndicies.public >
+              0 ? (
+                <Badge bg={"red"} circle size="lg">
+                  {match.value.messages.public.length -
+                    match.value.seenIndicies.public}
+                </Badge>
+              ) : (
+                ""
+              )}
+            </Flex>
+          </Tabs.Tab>
         </Tabs.List>
 
         <Tabs.Panel value="private">
@@ -59,9 +106,13 @@ const Chat = ({
               <Flex direction={"column-reverse"}>
                 {reverse([...messages.private]).map(
                   (message: Message, i: number) => (
-                    <Flex key={i}>
-                      <Text size="lg">{message.userName}:</Text>
-                      <Text size="lg">{message.message}</Text>
+                    <Flex key={i} gap={"xs"}>
+                      <Text size={isMobile ? "md" : "lg"}>
+                        {message.userName}:
+                      </Text>
+                      <Text size={isMobile ? "md" : "lg"}>
+                        {message.message}
+                      </Text>
                     </Flex>
                   ),
                 )}
@@ -78,7 +129,6 @@ const Chat = ({
                   domain: "PRIVATE",
                 },
               });
-              console.log("SUBMIT");
               match.value.socket?.send(
                 JSON.stringify({
                   type: "MESSAGE",
@@ -118,9 +168,13 @@ const Chat = ({
               <Flex direction={"column-reverse"}>
                 {reverse([...messages.public]).map(
                   (message: Message, i: number) => (
-                    <Flex key={i}>
-                      <Text size="lg">{message.userName}:</Text>
-                      <Text size="lg">{message.message}</Text>
+                    <Flex key={i} gap={"xs"}>
+                      <Text size={isMobile ? "md" : "lg"}>
+                        {message.userName}:
+                      </Text>
+                      <Text size={isMobile ? "md" : "lg"}>
+                        {message.message}
+                      </Text>
                     </Flex>
                   ),
                 )}
@@ -137,7 +191,6 @@ const Chat = ({
                   domain: "PUBLIC",
                 },
               });
-              console.log("SEND", values, "SOCKET ", match.value.socket);
               match.value.socket?.send(
                 JSON.stringify({
                   type: "MESSAGE",
@@ -158,12 +211,7 @@ const Chat = ({
               <Button
                 color="var(--primary)"
                 type="submit"
-                styles={{
-                  label: {
-                    fontSize: "var(--text-lg)",
-                    fontWeight: "var(--bold)",
-                  },
-                }}
+                size={isMobile ? "md" : "lg"}
               >
                 Send
               </Button>

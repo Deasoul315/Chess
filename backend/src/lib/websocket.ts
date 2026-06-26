@@ -35,11 +35,58 @@ type SpectatePayload = {
   userName: string;
 };
 
+type SurrenderPayload = {
+  userType: "PLAYER";
+  type: "SURRENDER";
+  userName: string;
+};
+
 type ClientMessage =
   | InitPayload
   | MovePayload
   | SpectatePayload
-  | MessagePayload;
+  | MessagePayload
+  | SurrenderPayload;
+
+const interval = setInterval(() => {
+  for (const [key, connection] of connections) {
+    if (connection.master?.isTimeOut() && connection.master.winner) {
+      const host = connection.master.hostPlayer.username;
+      const guest = connection.master.guestPlayer.username;
+
+      const targets = [host, guest];
+
+      for (const name of targets) {
+        const conn = connections.get(name);
+
+        if (conn?.socket && conn.socket.readyState === WebSocket.OPEN) {
+          conn.socket.send(
+            JSON.stringify({
+              type: "END",
+              winner: connection.master.winner,
+            }),
+          );
+        }
+      }
+
+      const hostConnection = connections.get(host);
+
+      for (const spectator of hostConnection?.spectators ?? []) {
+        if (
+          spectator.socket &&
+          spectator.socket.readyState === WebSocket.OPEN
+        ) {
+          spectator.socket.send(
+            JSON.stringify({
+              type: "END",
+              winner: connection.master.winner,
+            }),
+          );
+        }
+      }
+    }
+  }
+}, 5000);
 
 wss.on("connection", (ws: WebSocket) => {
   logger.info("[WS] Client connected");
@@ -92,12 +139,13 @@ wss.on("connection", (ws: WebSocket) => {
 
       connection.socket = ws;
 
-      connection.master.setTime({
-        guestTime: connection.time,
-        hostTime: connection.time,
-        hostRegisterTime: Date.now(),
-        guestRegisterTime: Date.now(),
-      });
+      if (!connection.master.getTime().guestRegisterTime)
+        connection.master.setTime({
+          guestTime: connection.time,
+          hostTime: connection.time,
+          hostRegisterTime: Date.now(),
+          guestRegisterTime: Date.now(),
+        });
 
       logger.info("[WS] User registered", { userName });
       return;
@@ -385,6 +433,46 @@ wss.on("connection", (ws: WebSocket) => {
 
       return;
     }
+
+    if (payload.type === "SURRENDER") {
+      const { userName } = payload;
+      const connection = connections.get(userName);
+      if (!connection || !connection.master) return;
+      connection.master?.surrender(userName);
+      const host = connection.master.hostPlayer.username;
+      const guest = connection.master.guestPlayer.username;
+
+      const targets = [host, guest];
+
+      for (const name of targets) {
+        const conn = connections.get(name);
+
+        if (conn?.socket && conn.socket.readyState === WebSocket.OPEN) {
+          conn.socket.send(
+            JSON.stringify({
+              type: "END",
+              winner: connection.master.winner,
+            }),
+          );
+        }
+      }
+
+      const hostConnection = connections.get(host);
+
+      for (const spectator of hostConnection?.spectators ?? []) {
+        if (
+          spectator.socket &&
+          spectator.socket.readyState === WebSocket.OPEN
+        ) {
+          spectator.socket.send(
+            JSON.stringify({
+              type: "END",
+              winner: connection.master.winner,
+            }),
+          );
+        }
+      }
+    }
     /**
      * =========================
      * GAME MOVE
@@ -441,7 +529,7 @@ wss.on("connection", (ws: WebSocket) => {
       if (connection.master.winner) {
         ws.send(
           JSON.stringify({
-            type: "MOVE_REJECTED",
+            type: "END",
             reason: "Game has already ended",
           }),
         );

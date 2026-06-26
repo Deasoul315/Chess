@@ -18,7 +18,6 @@ export function useCreateMatch() {
       turnTime: number;
     }) => await matchApi.createMatch(payload),
     onSuccess: (data, variables) => {
-      console.log("got from server ", data)
       match.dispatch({
         type: "CONFIGURE",
         params: {
@@ -28,7 +27,7 @@ export function useCreateMatch() {
           increment: data.increment,
           turnTime: data.turnTime,
           guestName: "",
-          hostName: data.hostName
+          hostName: data.hostName,
         },
       });
     },
