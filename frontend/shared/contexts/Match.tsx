@@ -47,7 +47,7 @@ export function createInitBoard(): (Piece | null)[][] {
     board[7][col] = {
       type: backRow[col],
       team: "WHITE",
-      image: `/pieces/${backRow[col]}_w.png`,
+      image: `/pieces/${backRow[col].toLowerCase()}_w.png`,
     };
   }
 
