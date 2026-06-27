@@ -1219,6 +1219,40 @@ export default function Lobby() {
         <Grid.Col span={{ base: 12, xxl: 6 }}>
           <Center>
             <Stack align="center">
+              <Stack pos={"relative"}>
+                <Board
+                  chessBoard={match.value.board}
+                  team={
+                    match.value.hostName === user.value.userName
+                      ? match.value.color
+                      : match.value.color === "BLACK"
+                        ? "WHITE"
+                        : "BLACK"
+                  }
+                  update={(fromX, fromY, toX, toY) => {
+                    if (
+                      match.value.socket &&
+                      match.value.socket.readyState === WebSocket.OPEN
+                    ) {
+                      match.value.socket.send(
+                        JSON.stringify({
+                          type: "PLAY",
+                          userName: user.value.userName,
+                          fromX: fromX,
+                          fromY: fromY,
+                          toX: toX,
+                          toY: toY,
+                        }),
+                      );
+                    }
+                  }}
+                ></Board>
+                {match.value.winner ? (
+                  <Overlay styles={{ root: { zIndex: 10 } }}></Overlay>
+                ) : (
+                  ""
+                )}
+              </Stack>
               {match.value.teamInTurn && (
                 <Paper py={"xs"} px={"xs"} bg={"var(--primary)"} w={"100%"}>
                   <Flex justify={"space-between"}>
@@ -1320,41 +1354,6 @@ export default function Lobby() {
                   </Flex>
                 </Paper>
               )}
-
-              <Stack pos={"relative"}>
-                <Board
-                  chessBoard={match.value.board}
-                  team={
-                    match.value.hostName === user.value.userName
-                      ? match.value.color
-                      : match.value.color === "BLACK"
-                        ? "WHITE"
-                        : "BLACK"
-                  }
-                  update={(fromX, fromY, toX, toY) => {
-                    if (
-                      match.value.socket &&
-                      match.value.socket.readyState === WebSocket.OPEN
-                    ) {
-                      match.value.socket.send(
-                        JSON.stringify({
-                          type: "PLAY",
-                          userName: user.value.userName,
-                          fromX: fromX,
-                          fromY: fromY,
-                          toX: toX,
-                          toY: toY,
-                        }),
-                      );
-                    }
-                  }}
-                ></Board>
-                {match.value.winner ? (
-                  <Overlay styles={{ root: { zIndex: 10 } }}></Overlay>
-                ) : (
-                  ""
-                )}
-              </Stack>
             </Stack>
           </Center>
         </Grid.Col>

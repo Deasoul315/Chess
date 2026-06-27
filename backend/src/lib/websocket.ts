@@ -51,7 +51,11 @@ export function makeSocketServer(server: any) {
 
   const interval = setInterval(() => {
     for (const [key, connection] of connections) {
-      if (connection.master?.isTimeOut() && connection.master.winner) {
+      if (
+        connection.socket &&
+        connection.master?.isTimeOut() &&
+        connection.master.winner
+      ) {
         const host = connection.master.hostPlayer.username;
         const guest = connection.master.guestPlayer.username;
 
