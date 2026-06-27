@@ -1,6 +1,10 @@
 import { Piece } from "../constants.ts/types";
 
 export class Referee {
+  private isWithin(value: number, min: number, max: number) {
+    if (value <= max && value >= min) return true;
+    return false;
+  }
   canMove(
     fromX: number,
     fromY: number,
@@ -9,6 +13,14 @@ export class Referee {
     board: (Piece | null)[][],
     isMoveBoard: boolean[][],
   ): boolean {
+    if (
+      !this.isWithin(fromX, 0, 7) ||
+      !this.isWithin(fromY, 0, 7) ||
+      !this.isWithin(toX, 0, 7) ||
+      !this.isWithin(toY, 0, 7)
+    )
+      return false;
+
     if (board[fromX][fromY] === null) return false;
 
     let movementHeatMap: Array<Array<null | string>> =
@@ -25,6 +37,9 @@ export class Referee {
     board: (Piece | null)[][],
     isMoveBoard: boolean[][],
   ): Array<Array<"MOVE" | "ATTACK" | "INVALID">> {
+    if (!this.isWithin(x, 0, 7) || !this.isWithin(y, 0, 7))
+      throw "invalid indicies";
+
     let temp: Array<Array<"MOVE" | "ATTACK" | "INVALID">> = [...Array(8)].map(
       () => Array(8).fill("INVALID"),
     );

@@ -196,7 +196,7 @@ export class MatchController {
 
       const isInPlay =
         connection && connection.master && !connection.master.winner;
-      console.log("is in play ? ", isInPlay, guestConnection, hostConnection);
+
       if (
         isInPlay &&
         hostConnection &&
