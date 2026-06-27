@@ -2,7 +2,7 @@
 
 import SideBar from "@/shared/components/Shell/SideBar";
 import { AppShell, Burger, Stack, Tabs } from "@mantine/core";
-import { useDisclosure } from "@mantine/hooks";
+import { useDisclosure, useMediaQuery } from "@mantine/hooks";
 import {
   GraphIcon,
   HouseIcon,
@@ -23,6 +23,8 @@ import { useUserDataContext } from "@/shared/contexts/UserData";
 
 const Shell = ({ children }: { children: React.ReactNode }) => {
   const userData = useUserDataContext();
+  const isMobile = useMediaQuery("(max-width: 768px)");
+
   return (
     <AppShell
       padding="md"
@@ -56,7 +58,9 @@ const Shell = ({ children }: { children: React.ReactNode }) => {
                     leftSection={<LogIcon size={12} />}
                     styles={{
                       tab: {
-                        fontSize: "var(--text-lg)",
+                        fontSize: isMobile
+                          ? "var(--header-5)"
+                          : "var(--header-4)",
                         fontWeight: "var(--bold)",
                       },
                     }}
@@ -68,7 +72,9 @@ const Shell = ({ children }: { children: React.ReactNode }) => {
                     leftSection={<SignInIcon size={12} />}
                     styles={{
                       tab: {
-                        fontSize: "var(--text-lg)",
+                        fontSize: isMobile
+                          ? "var(--header-5)"
+                          : "var(--header-4)",
                         fontWeight: "var(--bold)",
                       },
                     }}

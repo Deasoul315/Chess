@@ -110,7 +110,7 @@ const UserSignInForm = () => {
               <Button
                 type="submit"
                 color="var(--primary)"
-                fz={{ base: "md", md: "lg" }}
+                size={isMobile ? "md" : "lg"}
               >
                 submit
               </Button>

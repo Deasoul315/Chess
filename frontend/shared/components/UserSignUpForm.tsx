@@ -14,6 +14,7 @@ const UserSignUpForm = () => {
   const mutation = useCreateUser();
 
   const [error, setError] = useState<string>("");
+  const isMobile = useMediaQuery("(max-width: 768px)");
 
   async function submitUser(event: React.SubmitEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -67,7 +68,6 @@ const UserSignUpForm = () => {
       setError(err instanceof Error ? err.message : "Something went wrong");
     }
   }
-  const isMobile = useMediaQuery("(max-width: 768px)");
 
   return (
     <>

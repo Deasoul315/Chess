@@ -626,8 +626,9 @@ export function makeSocketServer(server: any) {
 
         for (const name of targets) {
           const conn = connections.get(name);
-
+          console.log("send move to ", name);
           if (conn?.socket && conn.socket.readyState === WebSocket.OPEN) {
+            console.log("SENT");
             conn.socket.send(
               JSON.stringify({
                 type: "MOVE_PIECE",

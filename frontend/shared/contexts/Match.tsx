@@ -544,6 +544,7 @@ function matchReducer(prevState: Match, action: Action): Match {
     }
     case "RESET": {
       if (prevState.socket) {
+        console.log("CLOSE");
         prevState.socket.close();
       }
       return {

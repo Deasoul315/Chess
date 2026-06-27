@@ -110,11 +110,11 @@ const NavBar = ({
         onClose={app.didPressSignupCloseFn}
         title={
           <>
-            <Text fz={"var(--header-4)"} hiddenFrom="md" fw="var(--bold)">
+            <Text fz={"var(--header-5)"} hiddenFrom="md" fw="var(--bold)">
               Authentication
             </Text>
 
-            <Text fz={"var(--header-2)"} visibleFrom="md" fw="var(--bold)">
+            <Text fz={"var(--header-3)"} visibleFrom="md" fw="var(--bold)">
               Authentication
             </Text>
           </>

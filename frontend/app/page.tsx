@@ -170,7 +170,7 @@ function Counter({
   });
 
   const isDesktop = useMediaQuery("(min-width: 768px)");
- 
+
   return <Title order={isDesktop ? 3 : 5} ref={elementRef} />;
 }
 function ChessSection() {
@@ -218,7 +218,7 @@ function ChessSection() {
     <Grid ref={sectionRef} gap={"50px"}>
       {/* IMAGE */}
       <Grid.Col span={{ base: 12, lg: 6 }}>
-        <Flex justify="right">
+        <Flex justify={{ base: "center", md: "right" }}>
           <div className="h-50 w-50 md:w-100 md:h-100 overflow-hidden">
             <div
               className="h-50 w-50 md:w-100 md:h-100"

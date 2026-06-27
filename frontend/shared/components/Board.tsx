@@ -28,7 +28,7 @@ export default function Board({
 
       switch (true) {
         case width < 400:
-          setTileWidth(35);
+          setTileWidth(30);
           break;
         case width < 600:
           setTileWidth(40);
