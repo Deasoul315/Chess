@@ -202,7 +202,9 @@ export class MatchController {
         hostConnection &&
         guestConnection &&
         guestUserName &&
-        hostUserName
+        hostUserName &&
+        connection.master?.getTime().hostTime &&
+        connection.master?.getTime().guestTime
       ) {
         const playerInTurn = guestConnection?.master?.playerInTurn;
 
@@ -355,7 +357,7 @@ export class MatchController {
     const { userName } = data;
     const requestId = crypto.randomUUID();
     const INCREMENT = 3 * 1000;
-    const TURN_TIME = 1 * 60 * 1000;
+    const TURN_TIME = 5 * 60 * 1000;
     logger.info("[RANDOM_ROOM] Request received", {
       requestId,
       userName,

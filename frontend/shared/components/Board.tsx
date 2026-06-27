@@ -258,7 +258,7 @@ export default function Board({
     <>
       {
         <div
-          className="grid grid-cols-8 grid-rows-8 w-fit"
+          className="grid grid-cols-8 grid-rows-8 w-fit touch-none"
           ref={boardElementRef}
         >
           {list}
