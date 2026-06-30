@@ -534,10 +534,39 @@ function JoinRoom({
             result = await useReconnect.refetch();
 
             if (result.data) break;
+            const err = result.error;
+            const errorTypeGuard =
+              err && typeof err === "object" && "status" in err;
+            if (errorTypeGuard && err.status === 401) {
+              let retry = 1;
+              let refresh: any = null;
+              while (retry) {
+                try {
+                  refresh = await useRefresh.mutateAsync();
+                } catch {}
+
+                if (refresh) break;
+
+                retry--;
+              }
+              if (!refresh) {
+                user.set({
+                  userName: "",
+                  name: "",
+                  accessToken: "",
+                });
+                return;
+              }
+              user.set({
+                ...user.value,
+                accessToken: refresh.accessToken as any,
+              });
+            }
 
             retry--;
           }
-          if (!result || !result.data) return;
+          if (!result) return;
+          if (!result.data) return;
 
           match.dispatch({
             type: "RESYNC",
@@ -842,10 +871,40 @@ function Matchmaking({
             result = await useReconnect.refetch();
 
             if (result.data) break;
+            const err = result.error;
+            const errorTypeGuard =
+              err && typeof err === "object" && "status" in err;
+            if (errorTypeGuard && err.status === 401) {
+              let retry = 1;
+              let refresh: any = null;
+              while (retry) {
+                try {
+                  refresh = await useRefresh.mutateAsync();
+                } catch {}
+
+                if (refresh) break;
+
+                retry--;
+              }
+              if (!refresh) {
+                userData.set({
+                  userName: "",
+                  name: "",
+                  accessToken: "",
+                });
+                return;
+              }
+              userData.set({
+                ...userData.value,
+                accessToken: refresh.accessToken as any,
+              });
+            }
 
             retry--;
           }
-          if (!result || !result.data) return;
+          if (!result) return;
+
+          if (!result.data) return;
 
           match.dispatch({
             type: "RESYNC",
@@ -1059,10 +1118,39 @@ function Spectate({
             result = await useReconnect.refetch();
 
             if (result.data) break;
+            const err = result.error;
+            const errorTypeGuard =
+              err && typeof err === "object" && "status" in err;
+            if (errorTypeGuard && err.status === 401) {
+              let retry = 1;
+              let refresh: any = null;
+              while (retry) {
+                try {
+                  refresh = await useRefresh.mutateAsync();
+                } catch {}
 
+                if (refresh) break;
+
+                retry--;
+              }
+              if (!refresh) {
+                userData.set({
+                  userName: "",
+                  name: "",
+                  accessToken: "",
+                });
+                return;
+              }
+              userData.set({
+                ...userData.value,
+                accessToken: refresh.accessToken as any,
+              });
+            }
             retry--;
           }
-          if (!result || !result.data) return;
+          if (!result) return;
+
+          if (!result.data) return;
 
           match.dispatch({
             type: "RESYNC",
@@ -1303,10 +1391,39 @@ export default function Lobby() {
             result = await useReconnectQuery.refetch();
 
             if (result.data) break;
+            const err = result.error;
+            const errorTypeGuard =
+              err && typeof err === "object" && "status" in err;
+            if (errorTypeGuard && err.status === 401) {
+              let retry = 1;
+              let refresh: any = null;
+              while (retry) {
+                try {
+                  refresh = await useRefresh.mutateAsync();
+                } catch {}
 
+                if (refresh) break;
+
+                retry--;
+              }
+              if (!refresh) {
+                user.set({
+                  userName: "",
+                  name: "",
+                  accessToken: "",
+                });
+                return;
+              }
+              user.set({
+                ...user.value,
+                accessToken: refresh.accessToken as any,
+              });
+            }
             retry--;
           }
-          if (!result || !result.data) return;
+          if (!result) return;
+
+          if (!result.data) return;
 
           match.dispatch({
             type: "RESYNC",
@@ -1469,10 +1586,39 @@ export default function Lobby() {
             result = await useReconnectQuery.refetch();
 
             if (result.data) break;
+            const err = result.error;
+            const errorTypeGuard =
+              err && typeof err === "object" && "status" in err;
+            if (errorTypeGuard && err.status === 401) {
+              let retry = 1;
+              let refresh: any = null;
+              while (retry) {
+                try {
+                  refresh = await useRefresh.mutateAsync();
+                } catch {}
 
+                if (refresh) break;
+
+                retry--;
+              }
+              if (!refresh) {
+                user.set({
+                  userName: "",
+                  name: "",
+                  accessToken: "",
+                });
+                return;
+              }
+              user.set({
+                ...user.value,
+                accessToken: refresh.accessToken as any,
+              });
+            }
             retry--;
           }
-          if (!result || !result.data) return;
+          if (!result) return;
+
+          if (!result.data) return;
 
           match.dispatch({
             type: "RESYNC",

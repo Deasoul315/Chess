@@ -1,13 +1,16 @@
 import { Request, Response } from "express";
 import jwt from "jsonwebtoken";
+import { JWT_ACCESS_TOKEN_AGE, JWT_REFRESH_TOKEN_AGE } from "../config";
 
 export function createAccessToken(userId: string) {
-  return jwt.sign({ userId }, process.env.JWT_SECRET!, { expiresIn: "15m" });
+  return jwt.sign({ userId }, process.env.JWT_SECRET!, {
+    expiresIn: JWT_ACCESS_TOKEN_AGE,
+  });
 }
 
 export function createRefreshToken(userId: string) {
   return jwt.sign({ userId }, process.env.REFRESH_SECRET!, {
-    expiresIn: "7d",
+    expiresIn: JWT_REFRESH_TOKEN_AGE,
   });
 }
 

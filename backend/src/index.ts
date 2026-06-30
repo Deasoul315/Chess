@@ -4,10 +4,11 @@
 import express from "express";
 import cors from "cors";
 import { router } from "./routers/router";
-import { PORT } from "./config/config";
+
 import http from "node:http";
 import cookieParser from "cookie-parser";
 import { makeSocketServer } from "./lib/websocket";
+import { PORT } from "./config";
 const app = express();
 
 app.use(cookieParser());

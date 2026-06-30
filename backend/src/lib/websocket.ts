@@ -1,5 +1,5 @@
 import WebSocket, { WebSocketServer } from "ws";
-import { WEB_SOCKET_PORT } from "../config/config";
+
 import { Connection, connections } from "../store/global";
 import { logger } from "./logger";
 import { z } from "zod";

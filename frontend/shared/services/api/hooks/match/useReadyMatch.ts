@@ -1,13 +1,14 @@
 import { UserProps } from "@/shared/types/types";
 import { useMutation } from "@tanstack/react-query";
 import { useUserDataContext } from "@/shared/contexts/UserData";
-import { MatchApi } from "../../api";
+import { MatchApi, UserApi } from "../../api";
 import { useMatchContext } from "@/shared/contexts/Match";
 import { Domain, PieceColor } from "@/shared/constants/types";
 import { RECONNECT_RETRY_COUNT, WS_URI } from "@/shared/config";
 import { useRefreshUser } from "../user/useRefreshToken";
 
 const matchApi = new MatchApi();
+const userApi = new UserApi();
 
 export function useReadyMatch() {
   const match = useMatchContext();
@@ -134,9 +135,38 @@ export function useReadyMatch() {
               let retry = 3;
               let result = null;
               while (retry) {
-                result = await matchApi.reconnectMatch({
-                  accessToken: userData.value.accessToken,
-                });
+                try {
+                  result = await matchApi.reconnectMatch({
+                    accessToken: userData.value.accessToken,
+                  });
+                } catch (e) {
+                  console.log("CRASH", e);
+                  const errorTypeGuard =
+                    e && typeof e === "object" && "status" in e;
+                  if (errorTypeGuard && e.status === 401) {
+                    let retry = 1;
+                    let result = null;
+                    while (retry) {
+                      result = await userApi.refreshToken();
+
+                      if (result) break;
+
+                      retry--;
+                    }
+                    if (!result) {
+                      userData.set({
+                        userName: "",
+                        name: "",
+                        accessToken: "",
+                      });
+                      return;
+                    }
+                    userData.set({
+                      ...userData.value,
+                      accessToken: result.accessToken,
+                    });
+                  }
+                }
 
                 if (result) break;
 
@@ -166,8 +196,8 @@ export function useReadyMatch() {
                   },
                 });
               console.log("socket", res);
-            } catch (e) {
-              console.log("CRASH", e);
+            } catch (e: unknown) {
+              console.log("CRASHS ", e);
             }
           }
         };
