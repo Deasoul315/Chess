@@ -1,7 +1,7 @@
-// export const API = "https://wooing-designing-composure.ngrok-free.dev";
-// export const WS_URI = "wss://wooing-designing-composure.ngrok-free.dev";
+export const API = "https://wooing-designing-composure.ngrok-free.dev";
+export const WS_URI = "wss://wooing-designing-composure.ngrok-free.dev";
 
-export const API = "http://localhost:4000";
-export const WS_URI = "ws://localhost:4000";
+// export const API = "http://localhost:4000";
+// export const WS_URI = "ws://localhost:4000";
 
 export const RECONNECT_RETRY_COUNT = 10;

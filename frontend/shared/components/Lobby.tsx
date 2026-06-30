@@ -1193,9 +1193,9 @@ export default function Lobby() {
   });
   const queryClient = useQueryClient();
   const useRefresh = useRefreshUser();
-  useEffect(() => {
-    window.Match = match;
-  });
+  // useEffect(() => {
+  //   window.Match = match;
+  // });
 
   useEffect(() => {
     if (!spectateQuery.isSuccess) return;
