@@ -4,6 +4,7 @@ import { useUserDataContext } from "@/shared/contexts/UserData";
 import { MatchApi } from "../../api";
 import { useMatchContext } from "@/shared/contexts/Match";
 import { Domain, PieceColor } from "@/shared/constants/types";
+import { useRefreshUser } from "../user/useRefreshToken";
 
 const matchApi = new MatchApi();
 
@@ -11,11 +12,11 @@ export function useCreateMatch() {
   const match = useMatchContext();
   return useMutation({
     mutationFn: async (payload: {
-      userName: string;
       color: PieceColor;
       domain: Domain;
       increment: number;
       turnTime: number;
+      accessToken: string;
     }) => await matchApi.createMatch(payload),
     onSuccess: (data, variables) => {
       match.dispatch({
@@ -30,6 +31,16 @@ export function useCreateMatch() {
           hostName: data.hostName,
         },
       });
+    },
+    onError: async (error: any) => {
+      const status = error?.response?.status;
+
+      if (status === 401) {
+        const useRefresh = await useRefreshUser();
+        await useRefresh.mutateAsync();
+
+        return;
+      }
     },
   });
 }

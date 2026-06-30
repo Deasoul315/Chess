@@ -2,10 +2,67 @@ import { API } from "@/shared/config";
 import { Domain, PieceColor } from "@/shared/constants/types";
 import { UserProps } from "@/shared/types/types";
 
+function makeError(response: Response, message?: string) {
+  return {
+    status: response.status,
+    message: message,
+  };
+}
+
 export class UserApi {
+  public async refreshToken() {
+    const response = await fetch(`${API}/user/refresh`, {
+      method: "POST",
+      credentials: "include",
+      headers: {
+        "Content-Type": "application/json",
+      },
+    });
+
+    if (!response.ok) {
+      throw new Error("Failed to refresh token");
+    }
+
+    return response.json();
+  }
+
+  public async signout(payload: { accessToken: string }) {
+    const response = await fetch(`${API}/user/signout`, {
+      method: "PATCH",
+      credentials: "include",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${payload.accessToken}`,
+      },
+    });
+
+    if (!response.ok) {
+      throw new Error("Failed to get user");
+    }
+
+    return response.json();
+  }
+
+  public async getData(payload: { accessToken: string }) {
+    const response = await fetch(`${API}/user`, {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${payload.accessToken}`,
+      },
+    });
+
+    if (!response.ok) {
+      throw makeError(response);
+    }
+
+    return response.json();
+  }
+
   public async post(payload: UserProps) {
     const response = await fetch(`${API}/user/signup`, {
       method: "POST",
+      credentials: "include",
       headers: {
         "Content-Type": "application/json",
       },
@@ -18,14 +75,11 @@ export class UserApi {
 
     return response.json();
   }
-  public async get(payload: { userName: string; password: string }) {
-    // const params = new URLSearchParams({
-    //   userName: payload.userName,
-    //   password: payload.password,
-    // });
 
+  public async get(payload: { userName: string; password: string }) {
     const response = await fetch(`${API}/user/login`, {
       method: "POST",
+      credentials: "include",
       headers: {
         "Content-Type": "application/json",
       },
@@ -38,22 +92,24 @@ export class UserApi {
 
     return response.json();
   }
+
   public async patch(payload: {
-    userName: string;
     newPassword: string;
     oldPassword: string;
     name: string;
+    accessToken: string;
   }) {
     const response = await fetch(`${API}/user/edit`, {
       method: "PATCH",
       headers: {
         "Content-Type": "application/json",
+        Authorization: `Bearer ${payload.accessToken}`,
       },
       body: JSON.stringify(payload),
     });
 
     if (!response.ok) {
-      throw new Error("Failed to get user");
+      throw makeError(response);
     }
 
     return response.json();
@@ -61,57 +117,48 @@ export class UserApi {
 }
 
 export class ScoreApi {
-  public async getDailyStats(username: string) {
-    const params = new URLSearchParams({
-      username,
-    });
-
-    const response = await fetch(`${API}/daily-stats?${params.toString()}`, {
+  public async getDailyStats(payload: { accessToken: string }) {
+    const response = await fetch(`${API}/daily-stats`, {
       method: "GET",
       headers: {
         "ngrok-skip-browser-warning": "true",
+        Authorization: `Bearer ${payload.accessToken}`,
       },
     });
 
     if (!response.ok) {
-      throw new Error("Failed to fetch daily stats");
+      throw makeError(response);
     }
 
     return response.json();
   }
-  public async getScore(username: string) {
-    const params = new URLSearchParams({
-      username,
-    });
-
-    const response = await fetch(`${API}/score?${params.toString()}`, {
+  public async getScore(payload: { accessToken: string }) {
+    const response = await fetch(`${API}/score`, {
       method: "GET",
       headers: {
         "ngrok-skip-browser-warning": "true",
+        Authorization: `Bearer ${payload.accessToken}`,
       },
     });
 
     if (!response.ok) {
-      throw new Error("Failed to fetch score");
+      throw makeError(response);
     }
 
     return response.json();
   }
 
-  public async getHistory(username: string) {
-    const params = new URLSearchParams({
-      username,
-    });
-
-    const response = await fetch(`${API}/history?${params.toString()}`, {
+  public async getHistory(payload: { accessToken: string }) {
+    const response = await fetch(`${API}/history`, {
       method: "GET",
       headers: {
         "ngrok-skip-browser-warning": "true",
+        Authorization: `Bearer ${payload.accessToken}`,
       },
     });
 
     if (!response.ok) {
-      throw new Error("Failed to fetch history");
+      throw makeError(response);
     }
 
     return response.json();
@@ -126,7 +173,7 @@ export class ScoreApi {
     });
 
     if (!response.ok) {
-      throw new Error("Failed to fetch leaderboard");
+      throw makeError(response);
     }
 
     return response.json();
@@ -136,7 +183,7 @@ export class ScoreApi {
 export class MatchApi {
   // Host creates match
   async createMatch(payload: {
-    userName: string;
+    accessToken: string;
     color: PieceColor;
     domain: Domain;
     increment: number;
@@ -146,6 +193,7 @@ export class MatchApi {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
+        Authorization: `Bearer ${payload.accessToken}`,
       },
       body: JSON.stringify(payload),
     });
@@ -154,7 +202,7 @@ export class MatchApi {
   }
 
   async configMatch(payload: {
-    userName: string;
+    accessToken: string;
     color: PieceColor;
     domain: Domain;
     increment: number;
@@ -164,14 +212,19 @@ export class MatchApi {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
+        Authorization: `Bearer ${payload.accessToken}`,
       },
       body: JSON.stringify(payload),
     });
 
+    if (!response.ok) {
+      throw makeError(response);
+    }
+
     return response.json();
   }
   // Get match status
-  async getMatch(payload: { code: string }): Promise<{
+  async getMatch(payload: { accessToken: string; code: string }): Promise<{
     code: string;
     host: string;
     guest: string | null;
@@ -187,12 +240,13 @@ export class MatchApi {
     const response = await fetch(`${API}/match/${payload.code}`, {
       headers: {
         "ngrok-skip-browser-warning": "true",
+        Authorization: `Bearer ${payload.accessToken}`,
       },
     });
 
     if (!response.ok) {
       const error = await response.json();
-      throw new Error(error.message ?? "Failed to get match");
+      throw makeError(response);
     }
 
     const data: {
@@ -223,7 +277,11 @@ export class MatchApi {
     const response = await fetch(`${API}/match/active`);
     if (!response.ok) {
       const error = await response.json();
-      throw new Error(error.message ?? "Failed to get matches");
+      throw makeError(response);
+    }
+
+    if (!response.ok) {
+      throw makeError(response);
     }
 
     const data: {
@@ -238,7 +296,7 @@ export class MatchApi {
     return data;
   }
 
-  async getRandomMatch(payload: { userName: string }): Promise<{
+  async getRandomMatch(payload: { accessToken: string }): Promise<{
     code: string;
     hostName: string;
     guestName: string | null;
@@ -250,15 +308,15 @@ export class MatchApi {
     increment: number;
     turnTime: number;
   }> {
-    const response = await fetch(`${API}/match/random/${payload.userName}`, {
+    const response = await fetch(`${API}/match/random`, {
       headers: {
         "ngrok-skip-browser-warning": "true",
+        Authorization: `Bearer ${payload.accessToken}`,
       },
     });
 
     if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.message ?? "Failed to get match");
+      throw makeError(response);
     }
 
     const data: {
@@ -277,21 +335,25 @@ export class MatchApi {
     return data;
   }
 
-  async joinMatch(payload: { code: string; guestName: string }) {
+  async joinMatch(payload: { code: string; accessToken: string }) {
     const response = await fetch(`${API}/match`, {
       method: "PATCH",
       headers: {
         "Content-Type": "application/json",
+        Authorization: `Bearer ${payload.accessToken}`,
       },
       body: JSON.stringify(payload),
     });
 
+    if (!response.ok) {
+      throw makeError(response);
+    }
+
     return response.json();
   }
-  async spectateMatch(payload: { code: string; userName: string }) {
+  async spectateMatch(payload: { code: string; accessToken: string }) {
     const url = new URLSearchParams({
       code: payload.code,
-      userName: payload.userName,
     });
     const response = await fetch(`${API}/match/spectate?${url.toString()}`, {
       method: "GET",
@@ -300,33 +362,32 @@ export class MatchApi {
         "ngrok-skip-browser-warning": "true",
       },
     });
+
     if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.message ?? "cannot spectate this room");
+      throw makeError(response);
     }
+
     return response.json();
   }
 
-  async reconnectMatch(payload: { userName: string }) {
-    const url = new URLSearchParams({
-      userName: payload.userName,
-    });
-    const response = await fetch(`${API}/match/reconnect?${url.toString()}`, {
+  async reconnectMatch(payload: { accessToken: string }) {
+    const response = await fetch(`${API}/match/reconnect`, {
       method: "GET",
       headers: {
         "Content-Type": "application/json",
         "ngrok-skip-browser-warning": "true",
+        Authorization: `Bearer ${payload.accessToken}`,
       },
     });
     if (!response.ok) {
       const error = await response.json();
-      throw new Error(error.message ?? "cannot reconnect this room");
+      throw makeError(response);
     }
     return response.json();
   }
   // Host starts match
   async readyMatch(payload: {
-    userName: string;
+    accessToken: string;
     hostName: string;
     guestName: string;
     code: string;
@@ -340,13 +401,15 @@ export class MatchApi {
       method: "PATCH",
       headers: {
         "Content-Type": "application/json",
+        Authorization: `Bearer ${payload.accessToken}`,
       },
       body: JSON.stringify(payload),
     });
+
     if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.message ?? "Failed to make ready");
+      throw makeError(response);
     }
+
     return response.json();
   }
 }

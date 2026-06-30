@@ -7,11 +7,11 @@ import { Domain, PieceColor } from "@/shared/constants/types";
 
 const matchApi = new MatchApi();
 
-export function useReconnectMatch(payload: { userName: string }) {
+export function useReconnectMatch(payload: { accessToken: string }) {
   const match = useMatchContext();
   return useQuery({
-    queryKey: ["reconnect", payload.userName],
+    queryKey: ["reconnect"],
     queryFn: async () => await matchApi.reconnectMatch(payload),
-    enabled: !!payload.userName,
+    enabled: false,
   });
 }

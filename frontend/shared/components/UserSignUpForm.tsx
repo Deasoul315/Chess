@@ -63,6 +63,7 @@ const UserSignUpForm = () => {
         name,
         userName,
         password,
+        accessToken: userData.value.accessToken,
       });
     } catch (err) {
       setError(err instanceof Error ? err.message : "Something went wrong");

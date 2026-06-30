@@ -61,7 +61,7 @@ export default function Account() {
   const handleSubmit = (values: typeof form.values) => {
     const { name, oldPassword, newPassword } = values;
     mutation.mutate({
-      userName: userData.value.userName,
+      accessToken: userData.value.accessToken,
       newPassword: newPassword,
       oldPassword: oldPassword,
       name: name,

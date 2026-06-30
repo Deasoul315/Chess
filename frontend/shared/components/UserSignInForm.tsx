@@ -27,7 +27,11 @@ const UserSignInForm = () => {
 
   useEffect(() => {
     if (!query.data) return;
-    userData.set({ userName: credentials.userName, name: query.data.name });
+    userData.set({
+      userName: credentials.userName,
+      name: query.data.name,
+      accessToken: query.data.accessToken,
+    });
   }, [query.isSuccess]);
 
   async function submitUser(event: React.SubmitEvent<HTMLFormElement>) {

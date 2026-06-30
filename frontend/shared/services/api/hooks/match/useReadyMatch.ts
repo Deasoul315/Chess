@@ -4,17 +4,20 @@ import { useUserDataContext } from "@/shared/contexts/UserData";
 import { MatchApi } from "../../api";
 import { useMatchContext } from "@/shared/contexts/Match";
 import { Domain, PieceColor } from "@/shared/constants/types";
-import { WS_URI } from "@/shared/config";
+import { RECONNECT_RETRY_COUNT, WS_URI } from "@/shared/config";
+import { useRefreshUser } from "../user/useRefreshToken";
 
 const matchApi = new MatchApi();
 
 export function useReadyMatch() {
   const match = useMatchContext();
+  const userData = useUserDataContext();
   return useMutation({
     mutationFn: async (payload: {
       code: string;
       guestName: string;
       hostName: string;
+      accessToken: string;
       userName: string;
       color: PieceColor;
       domain: Domain;
@@ -22,99 +25,182 @@ export function useReadyMatch() {
       turnTime: number;
       isReady: boolean;
     }) => await matchApi.readyMatch(payload),
+
     onSuccess: (data, variables) => {
       const { userName, hostName } = variables;
 
       if (userName !== hostName) return;
-      const socket = new WebSocket(WS_URI);
 
-      socket.onmessage = (event) => {
-        const message = JSON.parse(event.data);
-        switch (message.type) {
-          case "MOVE_PIECE":
-            const { fromX, fromY, toX, toY } = message;
+      const connectSocket = (retries: number) => {
+        if (!retries) return null;
 
-            const piece = match.value.board[fromX][fromY];
+        console.log("reconnect");
 
-            const isCastling =
-              piece?.type === "KING" && Math.abs(toY - fromY) === 2;
+        const socket = new WebSocket(WS_URI);
 
-            const movements = [];
-            if (isCastling) {
-              // Queenside castling
-              if (fromY - toY > 0) {
-                movements.push({
-                  fromX,
-                  fromY: 0,
-                  toX: fromX,
-                  toY: fromY - 1,
-                });
+        socket.onmessage = (event) => {
+          const message = JSON.parse(event.data);
+
+          switch (message.type) {
+            case "MOVE_PIECE": {
+              const { fromX, fromY, toX, toY } = message;
+
+              const piece = match.value.board[fromX][fromY];
+
+              const isCastling =
+                piece?.type === "KING" && Math.abs(toY - fromY) === 2;
+
+              const movements = [];
+
+              if (isCastling) {
+                if (fromY - toY > 0) {
+                  movements.push({
+                    fromX,
+                    fromY: 0,
+                    toX: fromX,
+                    toY: fromY - 1,
+                  });
+                } else {
+                  movements.push({
+                    fromX,
+                    fromY: 7,
+                    toX: fromX,
+                    toY: fromY + 1,
+                  });
+                }
               }
-              // Kingside castling
-              else {
-                movements.push({
-                  fromX,
-                  fromY: 7,
-                  toX: fromX,
-                  toY: fromY + 1,
-                });
-              }
+
+              movements.push({
+                fromX,
+                fromY,
+                toX,
+                toY,
+              });
+
+              match.dispatch({
+                type: "PLACE_PIECES",
+                params: {
+                  movements,
+                },
+              });
+
+              break;
             }
-            movements.push({
-              fromX: message.fromX,
-              fromY: message.fromY,
-              toX: message.toX,
-              toY: message.toY,
-            });
-            match.dispatch({
-              type: "PLACE_PIECES",
-              params: {
-                movements: movements,
-              },
-            });
-            break;
-          case "MESSAGE":
-            match.dispatch({
-              type: "ADD_MESSAGE",
-              params: {
-                userName: message.from,
-                message: message.message,
-                domain: message.domain,
-              },
-            });
-            break;
-          case "END":
-            match.dispatch({
-              type: "END",
-              params: {
-                winner: message.winner,
-              },
-            });
-            break;
-          default:
-            console.warn("Unknown message:", message);
-        }
+
+            case "MESSAGE":
+              if (message.from === userData.value.userName) break;
+
+              match.dispatch({
+                type: "ADD_MESSAGE",
+                params: {
+                  userName: message.from,
+                  message: message.message,
+                  domain: message.domain,
+                },
+              });
+
+              break;
+
+            case "END":
+              match.dispatch({
+                type: "END",
+                params: {
+                  winner: message.winner,
+                },
+              });
+
+              break;
+
+            default:
+              console.warn("Unknown message:", message);
+          }
+        };
+
+        socket.onopen = () => {
+          socket.send(
+            JSON.stringify({
+              type: "INIT",
+              userType: "PLAYER",
+              accessToken: userData.value.accessToken,
+            }),
+          );
+        };
+
+        socket.onclose = async () => {
+          console.log("socket closed");
+
+          if (!match.value.winner) {
+            try {
+              let retry = 3;
+              let result = null;
+              while (retry) {
+                result = await matchApi.reconnectMatch({
+                  accessToken: userData.value.accessToken,
+                });
+
+                if (result) break;
+
+                retry--;
+              }
+              if (!result) return;
+
+              console.log("fetched ", result);
+
+              match.dispatch({
+                type: "RESYNC",
+                params: {
+                  board: result.board,
+                  guestTime: result.guestTime,
+                  hostTime: result.hostTime,
+                  teamInTurn: result.playerInTurn,
+                },
+              });
+
+              const res = connectSocket(retries - 1);
+
+              if (res)
+                match.dispatch({
+                  type: "SET_SOCKET",
+                  params: {
+                    socket: res,
+                  },
+                });
+              console.log("socket", res);
+            } catch (e) {
+              console.log("CRASH", e);
+            }
+          }
+        };
+
+        socket.onerror = () => {
+          socket.close();
+        };
+
+        return socket;
       };
 
-      socket.onopen = () => {
-        socket.send(
-          JSON.stringify({
-            type: "INIT",
-            userType: "PLAYER",
-            userName: userName,
-          }),
-        );
-      };
+      const socket = connectSocket(RECONNECT_RETRY_COUNT);
+      if (socket) {
+        match.dispatch({
+          type: "START_GAME",
+          params: {
+            socket,
+            teamInTurn: data.playerInTurn,
+            hostName: data.hostName,
+            guestName: data.guestName,
+          },
+        });
+      }
+    },
+    onError: async (error: any) => {
+      const status = error?.response?.status;
 
-      match.dispatch({
-        type: "START_GAME",
-        params: {
-          socket: socket,
-          teamInTurn: data.playerInTurn,
-          hostName: data.hostName,
-          guestName: data.guestName,
-        },
-      });
+      if (status === 401) {
+        const useRefresh = await useRefreshUser();
+        await useRefresh.mutateAsync();
+
+        return;
+      }
     },
   });
 }

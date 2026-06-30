@@ -3,10 +3,13 @@ import { ScoreApi } from "../../api";
 
 const scoreApi: ScoreApi = new ScoreApi();
 
-export const useGetScore = (username: string) => {
+export const useGetScore = (
+  userName: string,
+  payload: { accessToken: string },
+) => {
   return useQuery({
-    queryKey: ["score", username],
-    queryFn: () => scoreApi.getScore(username),
-    enabled: !!username,
+    queryKey: ["score", userName],
+    queryFn: () => scoreApi.getScore(payload),
+    enabled: !!payload,
   });
 };

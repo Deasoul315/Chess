@@ -2,6 +2,7 @@
 
 import { useAppContext } from "@/shared/contexts/App";
 import { useUserDataContext } from "@/shared/contexts/UserData";
+import { useSignOutUser } from "@/shared/services/api/hooks/user/useSignOutUser";
 import {
   ActionIcon,
   Flex,
@@ -38,6 +39,7 @@ const NavBar = ({
     getInitialValueInEffect: true,
   });
   const userData = useUserDataContext();
+  const useSignOut = useSignOutUser();
   const app = useAppContext();
   return (
     <div className="bg-(--primary) text-(--text) w-full h-full flex items-center px-2">
@@ -77,10 +79,7 @@ const NavBar = ({
                 bg={"red"}
                 onClick={() => {
                   localStorage.clear();
-                  userData.set({
-                    userName: "",
-                    name: "",
-                  });
+                  useSignOut.mutate();
                 }}
               >
                 <SignOutIcon size={30}></SignOutIcon>

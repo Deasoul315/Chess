@@ -5,7 +5,7 @@ import { MatchApi } from "../../api";
 
 const matchApi = new MatchApi();
 
-const useGetRoom = (payload: { code: string }) => {
+const useGetRoom = (payload: { code: string; accessToken: string }) => {
   const query = useQuery({
     queryKey: ["players"],
     queryFn: async () => await matchApi.getMatch(payload),

@@ -1,4 +1,3 @@
-// special type guard(condition) , as result of guard typescript concludes a narrow for value
 export function isString(value: unknown): value is string {
   return typeof value === "string";
 }

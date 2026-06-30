@@ -1,6 +1,7 @@
-import { Response } from "express";
+import { Request, Response } from "express";
 import { PIECES_TYPE } from "../constants.ts/constants";
 import { Piece } from "../constants.ts/types";
+import z, { ZodSchema } from "zod";
 
 export function makeCode(length: number) {
   let result = "";
@@ -74,6 +75,14 @@ export function badRequest(res: Response, message: string, extra?: any) {
   });
 }
 
+export function unauthorized(res: Response, message: string, extra?: any) {
+  return res.status(401).json({
+    success: false,
+    message,
+    ...(extra && { extra }),
+  });
+}
+
 export function serverError(
   res: Response,
   error: unknown,
@@ -94,11 +103,11 @@ export function ok(res: Response, data: any, status = 200) {
 }
 
 export function findValueInMap<K, V>(
-  compareFn: (val: V, key?: K) => boolean,
+  compareFn: (key: K, val: V) => boolean,
   map: Map<K, V>,
 ) {
   for (const [key, value] of map) {
-    if (compareFn(value, key)) {
+    if (compareFn(key, value)) {
       return { key, value };
     }
   }
@@ -106,4 +115,15 @@ export function findValueInMap<K, V>(
     key: null,
     value: null,
   };
+}
+
+export function validate<T extends ZodSchema>(
+  schema: T,
+  value: unknown,
+): z.infer<T> | null {
+  const result = schema.safeParse(value);
+
+  if (!result.success) return null;
+
+  return result.data;
 }

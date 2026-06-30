@@ -40,8 +40,9 @@ import Chat from "./Chat";
 import { useReconnectMatch } from "../services/api/hooks/match/useReconnectMatch";
 import Timer from "./Timer";
 import { useSearchParams } from "next/navigation";
-import { WS_URI } from "../config";
+import { RECONNECT_RETRY_COUNT, WS_URI } from "../config";
 import { useQueryClient } from "@tanstack/react-query";
+import { useRefreshUser } from "../services/api/hooks/user/useRefreshToken";
 
 type LobbyView =
   | "home"
@@ -131,7 +132,12 @@ function Room({
   const readyMutation = useReadyMatch();
   const configMutation = useConfigMatch();
   const uer = useUserDataContext();
-  const pollPlayers = useGetRoom({ code: match.value.code });
+  const useRefresh = useRefreshUser();
+
+  const pollPlayers = useGetRoom({
+    code: match.value.code,
+    accessToken: userData.value.accessToken,
+  });
 
   useEffect(() => {
     if (!readyMutation.isSuccess) return;
@@ -148,9 +154,25 @@ function Room({
     const params = {
       ...configuration,
       userName: userData.value.userName,
+      accessToken: userData.value.accessToken,
     };
     mutation.mutate(params);
   }, []);
+
+  useEffect(() => {
+    if (!pollPlayers.isError) return;
+
+    const error = pollPlayers.error;
+
+    if (error && typeof error === "object" && "status" in error) {
+      const status = error.status;
+
+      if (status === 401) {
+        useRefresh.mutate();
+        return;
+      }
+    }
+  }, [pollPlayers.isError]);
   return (
     <>
       <Stack>
@@ -214,6 +236,7 @@ function Room({
             <Button
               onClick={() => {
                 readyMutation.mutate({
+                  accessToken: userData.value.accessToken,
                   code: match.value.code,
                   userName: userData.value.userName,
                   guestName: match.value.guestName,
@@ -245,7 +268,7 @@ function Room({
             <Button
               onClick={() => {
                 configMutation.mutate({
-                  userName: userData.value.userName,
+                  accessToken: userData.value.accessToken,
                   ...configuration,
                 });
               }}
@@ -393,93 +416,160 @@ function JoinRoom({
   const user = useUserDataContext();
   const [error, setError] = useState<null | string>(null);
   const match = useMatchContext();
-  const pollPlayers = useGetRoom({ code: match.value.code });
+  const pollPlayers = useGetRoom({
+    code: match.value.code,
+    accessToken: user.value.accessToken,
+  });
+  const useRefresh = useRefreshUser();
   const readyMutation = useReadyMatch();
   const [isReady, setIsReady] = useState(false);
+  const useReconnect = useReconnectMatch({
+    accessToken: user.value.accessToken,
+  });
 
   useEffect(() => {
     if (!pollPlayers.isSuccess || pollPlayers.data.state !== "READY") return;
     setIsGameStart(true);
     if (match.value.socket) return;
-    const socket = new WebSocket(WS_URI);
+    const connectSocket = (retries: number) => {
+      if (!retries) return null;
+      console.log("reconnect");
 
-    socket.onmessage = (event) => {
-      const message = JSON.parse(event.data);
-      switch (message.type) {
-        case "MOVE_PIECE":
-          const { fromX, fromY, toX, toY } = message;
+      const socket = new WebSocket(WS_URI);
 
-          const piece = match.value.board[fromX][fromY];
+      socket.onopen = () => {
+        console.log("connected");
 
-          const isCastling =
-            piece?.type === "KING" && Math.abs(toY - fromY) === 2;
-          const movements = [];
-          if (isCastling) {
-            // Queenside castling
-            if (fromY - toY > 0) {
-              movements.push({
-                fromX,
-                fromY: 0,
-                toX: fromX,
-                toY: fromY - 1,
-              });
+        socket.send(
+          JSON.stringify({
+            type: "INIT",
+            userType: "PLAYER",
+            accessToken: user.value.accessToken,
+          }),
+        );
+      };
+
+      socket.onmessage = (event) => {
+        const message = JSON.parse(event.data);
+
+        switch (message.type) {
+          case "END":
+            match.dispatch({
+              type: "END",
+              params: {
+                winner: message.winner,
+              },
+            });
+            break;
+
+          case "MOVE_PIECE": {
+            const { fromX, fromY, toX, toY } = message;
+
+            const piece = match.value.board[fromX][fromY];
+
+            const isCastling =
+              piece?.type === "KING" && Math.abs(toY - fromY) === 2;
+
+            const movements = [];
+
+            if (isCastling) {
+              // Queenside castling
+              if (fromY - toY > 0) {
+                movements.push({
+                  fromX,
+                  fromY: 0,
+                  toX: fromX,
+                  toY: fromY - 1,
+                });
+              }
+              // Kingside castling
+              else {
+                movements.push({
+                  fromX,
+                  fromY: 7,
+                  toX: fromX,
+                  toY: fromY + 1,
+                });
+              }
             }
-            // Kingside castling
-            else {
-              movements.push({
-                fromX,
-                fromY: 7,
-                toX: fromX,
-                toY: fromY + 1,
-              });
-            }
+
+            movements.push({
+              fromX: message.fromX,
+              fromY: message.fromY,
+              toX: message.toX,
+              toY: message.toY,
+            });
+
+            match.dispatch({
+              type: "PLACE_PIECES",
+              params: {
+                movements,
+              },
+            });
+
+            break;
           }
-          movements.push({
-            fromX: message.fromX,
-            fromY: message.fromY,
-            toX: message.toX,
-            toY: message.toY,
-          });
+
+          case "MESSAGE": {
+            if (message.from === user.value.userName) break;
+            match.dispatch({
+              type: "ADD_MESSAGE",
+              params: {
+                userName: message.from,
+                message: message.message,
+                domain: message.domain,
+              },
+            });
+
+            break;
+          }
+        }
+      };
+
+      socket.onclose = async () => {
+        if (!match.value.winner) {
+          let retry = 3;
+          let result = null;
+          while (retry) {
+            result = await useReconnect.refetch();
+
+            if (result.data) break;
+
+            retry--;
+          }
+          if (!result || !result.data) return;
+
           match.dispatch({
-            type: "PLACE_PIECES",
+            type: "RESYNC",
             params: {
-              movements: movements,
+              board: result.data.board,
+              guestTime: result.data.guestTime,
+              hostTime: result.data.hostTime,
+              teamInTurn: result.data.playerInTurn,
             },
           });
-          break;
-        case "MESSAGE":
-          match.dispatch({
-            type: "ADD_MESSAGE",
-            params: {
-              userName: message.from,
-              message: message.message,
-              domain: message.domain,
-            },
-          });
-          break;
-        case "END":
-          match.dispatch({
-            type: "END",
-            params: {
-              winner: message.winner,
-            },
-          });
-          break;
-        default:
-          console.warn("Unknown message:", message);
-      }
+
+          const res = connectSocket(retries - 1);
+
+          if (res)
+            match.dispatch({
+              type: "SET_SOCKET",
+              params: {
+                socket: res,
+              },
+            });
+        }
+      };
+
+      socket.onerror = () => {
+        socket.close();
+      };
+
+      return socket;
     };
 
-    socket.onopen = () => {
-      socket.send(
-        JSON.stringify({
-          type: "INIT",
-          userType: "PLAYER",
-          userName: user.value.userName,
-        }),
-      );
-    };
-
+    const socket = connectSocket(RECONNECT_RETRY_COUNT);
+    if (!socket) return;
     match.dispatch({
       type: "CONFIGURE",
       params: {
@@ -508,6 +598,21 @@ function JoinRoom({
     if (!readyMutation.isSuccess) return;
     setIsReady(readyMutation.data.isReady);
   }, [readyMutation.isSuccess]);
+
+  useEffect(() => {
+    if (!pollPlayers.isError) return;
+
+    const error = pollPlayers.error;
+
+    if (error && typeof error === "object" && "status" in error) {
+      const status = error.status;
+
+      if (status === 401) {
+        useRefresh.mutate();
+        return;
+      }
+    }
+  }, [pollPlayers.isError]);
   return (
     <Stack>
       {!mutation.isSuccess && (
@@ -525,7 +630,10 @@ function JoinRoom({
                 setError("Empty code field");
                 return;
               }
-              mutation.mutate({ guestName: user.value.userName, code: code });
+              mutation.mutate({
+                accessToken: user.value.accessToken,
+                code: code,
+              });
             }}
           >
             <Stack gap={"xs"}>
@@ -592,6 +700,7 @@ function JoinRoom({
           <Button
             onClick={() => {
               readyMutation.mutate({
+                accessToken: user.value.accessToken,
                 code: match.value.code,
                 userName: user.value.userName,
                 guestName: user.value.userName,
@@ -622,91 +731,154 @@ function Matchmaking({
 }) {
   const [visible, { toggle }] = useDisclosure(true);
   const userData = useUserDataContext();
-  const randomQuery = useGetRandomRoom({ userName: userData.value.userName });
+  const useRefresh = useRefreshUser();
+  const randomQuery = useGetRandomRoom({
+    userName: userData.value.userName,
+    accessToken: userData.value.accessToken,
+  });
   const match = useMatchContext();
+  const useReconnect = useReconnectMatch({
+    accessToken: userData.value.accessToken,
+  });
   useEffect(() => {
     if (!randomQuery.data) return;
+
     setIsGameStart(true);
+    function reconnect(retries: number) {
+      if (!retries) return;
+      console.log("reconnect");
 
-    const socket = new WebSocket(WS_URI);
+      const socket = new WebSocket(WS_URI);
 
-    socket.onmessage = (event) => {
-      const message = JSON.parse(event.data);
-      switch (message.type) {
-        case "MOVE_PIECE":
-          const { fromX, fromY, toX, toY } = message;
+      socket.onmessage = (event) => {
+        const message = JSON.parse(event.data);
 
-          const piece = match.value.board[fromX][fromY];
+        switch (message.type) {
+          case "MOVE_PIECE":
+            const { fromX, fromY, toX, toY } = message;
 
-          const isCastling =
-            piece?.type === "KING" && Math.abs(toY - fromY) === 2;
+            const piece = match.value.board[fromX][fromY];
 
-          const movements = [];
-          if (isCastling) {
-            // Queenside castling
-            if (fromY - toY > 0) {
-              movements.push({
-                fromX,
-                fromY: 0,
-                toX: fromX,
-                toY: fromY - 1,
-              });
+            const isCastling =
+              piece?.type === "KING" && Math.abs(toY - fromY) === 2;
+
+            const movements = [];
+
+            if (isCastling) {
+              if (fromY - toY > 0) {
+                movements.push({
+                  fromX,
+                  fromY: 0,
+                  toX: fromX,
+                  toY: fromY - 1,
+                });
+              } else {
+                movements.push({
+                  fromX,
+                  fromY: 7,
+                  toX: fromX,
+                  toY: fromY + 1,
+                });
+              }
             }
-            // Kingside castling
-            else {
-              movements.push({
-                fromX,
-                fromY: 7,
-                toX: fromX,
-                toY: fromY + 1,
-              });
-            }
+
+            movements.push({
+              fromX,
+              fromY,
+              toX,
+              toY,
+            });
+
+            match.dispatch({
+              type: "PLACE_PIECES",
+              params: {
+                movements,
+              },
+            });
+
+            break;
+
+          case "MESSAGE":
+            if (message.from === userData.value.userName) break;
+
+            match.dispatch({
+              type: "ADD_MESSAGE",
+              params: {
+                userName: message.from,
+                message: message.message,
+                domain: message.domain,
+              },
+            });
+
+            break;
+
+          case "END":
+            match.dispatch({
+              type: "END",
+              params: {
+                winner: message.winner,
+              },
+            });
+
+            break;
+        }
+      };
+
+      socket.onopen = () => {
+        socket.send(
+          JSON.stringify({
+            type: "INIT",
+            userType: "PLAYER",
+            accessToken: userData.value.accessToken,
+          }),
+        );
+      };
+
+      socket.onclose = async () => {
+        if (!match.value.winner) {
+          let retry = 3;
+          let result = null;
+          while (retry) {
+            result = await useReconnect.refetch();
+
+            if (result.data) break;
+
+            retry--;
           }
-          movements.push({
-            fromX: message.fromX,
-            fromY: message.fromY,
-            toX: message.toX,
-            toY: message.toY,
-          });
-          match.dispatch({
-            type: "PLACE_PIECES",
-            params: {
-              movements: movements,
-            },
-          });
-          break;
-        case "MESSAGE":
-          match.dispatch({
-            type: "ADD_MESSAGE",
-            params: {
-              userName: message.from,
-              message: message.message,
-              domain: message.domain,
-            },
-          });
-          break;
-        case "END":
-          match.dispatch({
-            type: "END",
-            params: {
-              winner: message.winner,
-            },
-          });
-          break;
-        default:
-          console.warn("Unknown message:", message);
-      }
-    };
+          if (!result || !result.data) return;
 
-    socket.onopen = () => {
-      socket.send(
-        JSON.stringify({
-          type: "INIT",
-          userType: "PLAYER",
-          userName: userData.value.userName,
-        }),
-      );
-    };
+          match.dispatch({
+            type: "RESYNC",
+            params: {
+              board: result.data.board,
+              guestTime: result.data.guestTime,
+              hostTime: result.data.hostTime,
+              teamInTurn: result.data.playerInTurn,
+            },
+          });
+
+          const res = reconnect(retries - 1);
+
+          if (res)
+            match.dispatch({
+              type: "SET_SOCKET",
+              params: {
+                socket: res,
+              },
+            });
+        }
+      };
+      socket.onerror = () => {
+        socket.close();
+      };
+
+      return socket;
+    }
+
+    const socket = reconnect(RECONNECT_RETRY_COUNT);
+
+    if (!socket) return;
+
     match.dispatch({
       type: "CONFIGURE",
       params: {
@@ -723,13 +895,28 @@ function Matchmaking({
     match.dispatch({
       type: "START_GAME",
       params: {
-        socket: socket,
+        socket,
         teamInTurn: randomQuery.data.playerInTurn,
         hostName: randomQuery.data.hostName,
         guestName: randomQuery.data.guestName ?? "",
       },
     });
   }, [randomQuery.data]);
+
+  useEffect(() => {
+    if (!randomQuery.isError) return;
+
+    const error = randomQuery.error;
+
+    if (error && typeof error === "object" && "status" in error) {
+      const status = error.status;
+
+      if (status === 401) {
+        useRefresh.mutate();
+        return;
+      }
+    }
+  }, [randomQuery.isError]);
 
   return (
     <Stack pos={"relative"} h={100}>
@@ -755,94 +942,160 @@ function Spectate({
   const [code, setCode] = useState("");
   const match = useMatchContext();
   const userData = useUserDataContext();
-  const spectateQuery = useSpecateMatch({
+  const spectateQuery = useSpecateMatch(userData.value.userName, {
     code: code,
-    userName: userData.value.userName,
+    accessToken: userData.value.accessToken,
   });
   const titleWidth = "70px";
+  const useRefresh = useRefreshUser();
+  const useReconnect = useReconnectMatch({
+    accessToken: userData.value.accessToken,
+  });
 
   useEffect(() => {
     if (!spectateQuery.isSuccess) return;
+
     setIsGameStart(true);
-    const socket = new WebSocket(WS_URI);
+    function reconnect(retries: number) {
+      if (!retries) return null;
+      console.log("reconnect");
 
-    socket.onmessage = (event) => {
-      const message = JSON.parse(event.data);
-      switch (message.type) {
-        case "MOVE_PIECE":
-          const { fromX, fromY, toX, toY } = message;
+      const socket = new WebSocket(WS_URI);
 
-          const piece = match.value.board[fromX][fromY];
+      socket.onmessage = (event) => {
+        const message = JSON.parse(event.data);
 
-          const isCastling =
-            piece?.type === "KING" && Math.abs(toY - fromY) === 2;
+        switch (message.type) {
+          case "MOVE_PIECE": {
+            const { fromX, fromY, toX, toY } = message;
 
-          const movements = [];
-          if (isCastling) {
-            // Queenside castling
-            if (fromY - toY > 0) {
-              movements.push({
-                fromX,
-                fromY: 0,
-                toX: fromX,
-                toY: fromY - 1,
-              });
+            const piece = match.value.board[fromX][fromY];
+
+            const isCastling =
+              piece?.type === "KING" && Math.abs(toY - fromY) === 2;
+
+            const movements = [];
+
+            if (isCastling) {
+              // Queenside
+              if (fromY - toY > 0) {
+                movements.push({
+                  fromX,
+                  fromY: 0,
+                  toX: fromX,
+                  toY: fromY - 1,
+                });
+              }
+              // Kingside
+              else {
+                movements.push({
+                  fromX,
+                  fromY: 7,
+                  toX: fromX,
+                  toY: fromY + 1,
+                });
+              }
             }
-            // Kingside castling
-            else {
-              movements.push({
-                fromX,
-                fromY: 7,
-                toX: fromX,
-                toY: fromY + 1,
-              });
-            }
+
+            movements.push({
+              fromX: message.fromX,
+              fromY: message.fromY,
+              toX: message.toX,
+              toY: message.toY,
+            });
+
+            match.dispatch({
+              type: "PLACE_PIECES",
+              params: {
+                movements,
+              },
+            });
+
+            break;
           }
-          movements.push({
-            fromX: message.fromX,
-            fromY: message.fromY,
-            toX: message.toX,
-            toY: message.toY,
-          });
-          match.dispatch({
-            type: "PLACE_PIECES",
-            params: {
-              movements: movements,
-            },
-          });
-          break;
-        case "MESSAGE":
-          match.dispatch({
-            type: "ADD_MESSAGE",
-            params: {
-              userName: message.from,
-              message: message.message,
-              domain: message.domain,
-            },
-          });
-          break;
-        case "END":
-          match.dispatch({
-            type: "END",
-            params: {
-              winner: message.winner,
-            },
-          });
-          break;
-        default:
-          console.warn("Unknown message:", message);
-      }
-    };
 
-    socket.onopen = () => {
-      socket.send(
-        JSON.stringify({
-          type: "INIT",
-          userType: "SPECTATOR",
-          userName: userData.value.userName,
-        }),
-      );
-    };
+          case "MESSAGE":
+            if (message.from === userData.value.userName) break;
+
+            match.dispatch({
+              type: "ADD_MESSAGE",
+              params: {
+                userName: message.from,
+                message: message.message,
+                domain: message.domain,
+              },
+            });
+            break;
+
+          case "END":
+            match.dispatch({
+              type: "END",
+              params: {
+                winner: message.winner,
+              },
+            });
+            break;
+
+          default:
+            console.warn("Unknown message:", message);
+        }
+      };
+
+      socket.onopen = () => {
+        socket.send(
+          JSON.stringify({
+            type: "INIT",
+            userType: "SPECTATOR",
+            accessToken: userData.value.accessToken,
+          }),
+        );
+      };
+
+      socket.onclose = async () => {
+        if (!match.value.winner) {
+          let retry = 3;
+          let result = null;
+          while (retry) {
+            result = await useReconnect.refetch();
+
+            if (result.data) break;
+
+            retry--;
+          }
+          if (!result || !result.data) return;
+
+          match.dispatch({
+            type: "RESYNC",
+            params: {
+              board: result.data.board,
+              guestTime: result.data.guestTime,
+              hostTime: result.data.hostTime,
+              teamInTurn: result.data.playerInTurn,
+            },
+          });
+
+          const res = reconnect(retries - 1);
+
+          if (res)
+            match.dispatch({
+              type: "SET_SOCKET",
+              params: {
+                socket: res,
+              },
+            });
+        }
+      };
+
+      socket.onerror = () => {
+        socket.close();
+      };
+      return socket;
+    }
+
+    const socket = reconnect(RECONNECT_RETRY_COUNT);
+
+    if (!socket) return;
+
     match.dispatch({
       type: "CONFIGURE",
       params: {
@@ -859,12 +1112,27 @@ function Spectate({
     match.dispatch({
       type: "SPECTATE_INIT",
       params: {
-        socket: socket,
+        socket,
         teamInTurn: spectateQuery.data.playerInTurn,
         board: spectateQuery.data.board,
       },
     });
   }, [spectateQuery.isSuccess]);
+  useEffect(() => {
+    if (!spectateQuery.isError) return;
+
+    const error = spectateQuery.error;
+
+    if (error && typeof error === "object" && "status" in error) {
+      const status = error.status;
+
+      if (status === 401) {
+        useRefresh.mutate();
+        return;
+      }
+    }
+  }, [spectateQuery.isError]);
+
   return (
     <Stack>
       <form
@@ -917,96 +1185,160 @@ export default function Lobby() {
   const match = useMatchContext();
   const user = useUserDataContext();
   const useReconnectQuery = useReconnectMatch({
-    userName: user.value.userName,
+    accessToken: user.value.accessToken,
   });
-  const spectateQuery = useSpecateMatch({
+  const spectateQuery = useSpecateMatch(user.value.userName, {
     code: code ? code : "",
-    userName: user.value.userName,
+    accessToken: user.value.accessToken,
   });
   const queryClient = useQueryClient();
+  const useRefresh = useRefreshUser();
+  useEffect(() => {
+    window.Match = match;
+  });
 
   useEffect(() => {
     if (!spectateQuery.isSuccess) return;
+
     setIsGameStart(true);
-    const socket = new WebSocket(WS_URI);
+    function reconnect(retries: number) {
+      if (!retries) return null;
+      console.log("reconnect");
+      const socket = new WebSocket(WS_URI);
 
-    socket.onmessage = (event) => {
-      const message = JSON.parse(event.data);
-      switch (message.type) {
-        case "MOVE_PIECE":
-          const { fromX, fromY, toX, toY } = message;
+      socket.onmessage = (event) => {
+        const message = JSON.parse(event.data);
 
-          const piece = match.value.board[fromX][fromY];
+        switch (message.type) {
+          case "MOVE_PIECE": {
+            const { fromX, fromY, toX, toY } = message;
 
-          const isCastling =
-            piece?.type === "KING" && Math.abs(toY - fromY) === 2;
+            const piece = match.value.board[fromX][fromY];
 
-          const movements = [];
-          if (isCastling) {
-            // Queenside castling
-            if (fromY - toY > 0) {
-              movements.push({
-                fromX,
-                fromY: 0,
-                toX: fromX,
-                toY: fromY - 1,
-              });
+            const isCastling =
+              piece?.type === "KING" && Math.abs(toY - fromY) === 2;
+
+            const movements = [];
+
+            if (isCastling) {
+              // Queenside
+              if (fromY - toY > 0) {
+                movements.push({
+                  fromX,
+                  fromY: 0,
+                  toX: fromX,
+                  toY: fromY - 1,
+                });
+              }
+              // Kingside
+              else {
+                movements.push({
+                  fromX,
+                  fromY: 7,
+                  toX: fromX,
+                  toY: fromY + 1,
+                });
+              }
             }
-            // Kingside castling
-            else {
-              movements.push({
-                fromX,
-                fromY: 7,
-                toX: fromX,
-                toY: fromY + 1,
-              });
-            }
+
+            movements.push({
+              fromX: message.fromX,
+              fromY: message.fromY,
+              toX: message.toX,
+              toY: message.toY,
+            });
+
+            match.dispatch({
+              type: "PLACE_PIECES",
+              params: {
+                movements,
+              },
+            });
+
+            break;
           }
-          movements.push({
-            fromX: message.fromX,
-            fromY: message.fromY,
-            toX: message.toX,
-            toY: message.toY,
-          });
-          match.dispatch({
-            type: "PLACE_PIECES",
-            params: {
-              movements: movements,
-            },
-          });
-          break;
-        case "MESSAGE":
-          match.dispatch({
-            type: "ADD_MESSAGE",
-            params: {
-              userName: message.from,
-              message: message.message,
-              domain: message.domain,
-            },
-          });
-          break;
-        case "END":
-          match.dispatch({
-            type: "END",
-            params: {
-              winner: message.winner,
-            },
-          });
-          break;
-        default:
-          console.warn("Unknown message:", message);
-      }
-    };
 
-    socket.onopen = () => {
-      socket.send(
-        JSON.stringify({
-          type: "INIT",
-          userType: "SPECTATOR",
-          userName: user.value.userName,
-        }),
-      );
-    };
+          case "MESSAGE":
+            if (message.from === user.value.userName) break;
+
+            match.dispatch({
+              type: "ADD_MESSAGE",
+              params: {
+                userName: message.from,
+                message: message.message,
+                domain: message.domain,
+              },
+            });
+            break;
+
+          case "END":
+            match.dispatch({
+              type: "END",
+              params: {
+                winner: message.winner,
+              },
+            });
+            break;
+
+          default:
+            console.warn("Unknown message:", message);
+        }
+      };
+
+      socket.onopen = () => {
+        socket.send(
+          JSON.stringify({
+            type: "INIT",
+            userType: "SPECTATOR",
+            accessToken: user.value.accessToken,
+          }),
+        );
+      };
+
+      socket.onclose = async () => {
+        if (!match.value.winner) {
+          let retry = 3;
+          let result = null;
+          while (retry) {
+            result = await useReconnectQuery.refetch();
+
+            if (result.data) break;
+
+            retry--;
+          }
+          if (!result || !result.data) return;
+
+          match.dispatch({
+            type: "RESYNC",
+            params: {
+              board: result.data.board,
+              guestTime: result.data.guestTime,
+              hostTime: result.data.hostTime,
+              teamInTurn: result.data.playerInTurn,
+            },
+          });
+
+          const res = reconnect(retries - 1);
+
+          if (res)
+            match.dispatch({
+              type: "SET_SOCKET",
+              params: {
+                socket: res,
+              },
+            });
+        }
+      };
+
+      socket.onerror = () => {
+        socket.close();
+      };
+      return socket;
+    }
+
+    const socket = reconnect(RECONNECT_RETRY_COUNT);
+
+    if (!socket) return;
 
     match.dispatch({
       type: "CONFIGURE",
@@ -1024,7 +1356,7 @@ export default function Lobby() {
     match.dispatch({
       type: "SPECTATE_INIT",
       params: {
-        socket: socket,
+        socket,
         teamInTurn: spectateQuery.data.playerInTurn,
         board: spectateQuery.data.board,
       },
@@ -1033,86 +1365,148 @@ export default function Lobby() {
 
   useEffect(() => {
     if (!useReconnectQuery.isSuccess) return;
+
     setIsGameStart(true);
-    const socket = new WebSocket(WS_URI);
 
-    socket.onmessage = (event) => {
-      const message = JSON.parse(event.data);
-      switch (message.type) {
-        case "MOVE_PIECE":
-          const { fromX, fromY, toX, toY } = message;
+    const connectSocket = (retries: number) => {
+      console.log("reconnect");
 
-          const piece = match.value.board[fromX][fromY];
+      const socket = new WebSocket(WS_URI);
 
-          const isCastling =
-            piece?.type === "KING" && Math.abs(toY - fromY) === 2;
+      socket.onmessage = (event) => {
+        const message = JSON.parse(event.data);
 
-          const movements = [];
-          if (isCastling) {
-            // Queenside castling
-            if (fromY - toY > 0) {
-              movements.push({
-                fromX,
-                fromY: 0,
-                toX: fromX,
-                toY: fromY - 1,
-              });
+        switch (message.type) {
+          case "MOVE_PIECE": {
+            const { fromX, fromY, toX, toY } = message;
+
+            const piece = match.value.board[fromX][fromY];
+
+            const isCastling =
+              piece?.type === "KING" && Math.abs(toY - fromY) === 2;
+
+            const movements = [];
+
+            if (isCastling) {
+              if (fromY - toY > 0) {
+                movements.push({
+                  fromX,
+                  fromY: 0,
+                  toX: fromX,
+                  toY: fromY - 1,
+                });
+              } else {
+                movements.push({
+                  fromX,
+                  fromY: 7,
+                  toX: fromX,
+                  toY: fromY + 1,
+                });
+              }
             }
-            // Kingside castling
-            else {
-              movements.push({
-                fromX,
-                fromY: 7,
-                toX: fromX,
-                toY: fromY + 1,
-              });
-            }
+
+            movements.push({
+              fromX,
+              fromY,
+              toX,
+              toY,
+            });
+
+            match.dispatch({
+              type: "PLACE_PIECES",
+              params: {
+                movements,
+              },
+            });
+
+            break;
           }
-          movements.push({
-            fromX: message.fromX,
-            fromY: message.fromY,
-            toX: message.toX,
-            toY: message.toY,
-          });
+
+          case "MESSAGE":
+            if (message.from === user.value.userName) break;
+
+            match.dispatch({
+              type: "ADD_MESSAGE",
+              params: {
+                userName: message.from,
+                message: message.message,
+                domain: message.domain,
+              },
+            });
+
+            break;
+
+          case "END":
+            match.dispatch({
+              type: "END",
+              params: {
+                winner: message.winner,
+              },
+            });
+
+            break;
+
+          default:
+            console.warn("Unknown message:", message);
+        }
+      };
+
+      socket.onopen = () => {
+        socket.send(
+          JSON.stringify({
+            type: "INIT",
+            userType: "PLAYER",
+            accessToken: user.value.accessToken,
+          }),
+        );
+      };
+
+      socket.onclose = async () => {
+        if (!match.value.winner) {
+          let retry = 3;
+          let result = null;
+          while (retry) {
+            result = await useReconnectQuery.refetch();
+
+            if (result.data) break;
+
+            retry--;
+          }
+          if (!result || !result.data) return;
+
           match.dispatch({
-            type: "PLACE_PIECES",
+            type: "RESYNC",
             params: {
-              movements: movements,
+              board: result.data.board,
+              guestTime: result.data.guestTime,
+              hostTime: result.data.hostTime,
+              teamInTurn: result.data.playerInTurn,
             },
           });
-          break;
-        case "MESSAGE":
-          match.dispatch({
-            type: "ADD_MESSAGE",
-            params: {
-              userName: message.from,
-              message: message.message,
-              domain: message.domain,
-            },
-          });
-          break;
-        case "END":
-          match.dispatch({
-            type: "END",
-            params: {
-              winner: message.winner,
-            },
-          });
-          break;
-        default:
-          console.warn("Unknown message:", message);
-      }
+
+          const res = connectSocket(retries - 1);
+
+          if (res)
+            match.dispatch({
+              type: "SET_SOCKET",
+              params: {
+                socket: res,
+              },
+            });
+        }
+      };
+
+      socket.onerror = () => {
+        socket.close();
+      };
+
+      return socket;
     };
 
-    socket.onopen = () => {
-      socket.send(
-        JSON.stringify({
-          type: "INIT",
-          userType: "PLAYER",
-          userName: user.value.userName,
-        }),
-      );
-    };
+    const socket = connectSocket(RECONNECT_RETRY_COUNT);
+
+    if (!socket) return;
+
     match.dispatch({
       type: "CONFIGURE",
       params: {
@@ -1125,15 +1519,17 @@ export default function Lobby() {
         hostName: useReconnectQuery.data.host,
       },
     });
+
     match.dispatch({
       type: "START_GAME",
       params: {
-        socket: socket,
+        socket,
         teamInTurn: useReconnectQuery.data.playerInTurn,
         guestName: useReconnectQuery.data.guest,
         hostName: useReconnectQuery.data.host,
       },
     });
+
     match.dispatch({
       type: "RESYNC",
       params: {
@@ -1144,12 +1540,26 @@ export default function Lobby() {
       },
     });
   }, [useReconnectQuery.isSuccess]);
-  console.log(
-    "BOOLEANS",
-    isGameStart,
-    useReconnectQuery.isSuccess,
-    spectateQuery.isSuccess,
-  );
+
+  useEffect(() => {
+    if (!useReconnectQuery.isError) return;
+
+    const error = useReconnectQuery.error;
+
+    if (error && typeof error === "object" && "status" in error) {
+      const status = error.status;
+
+      if (status === 401) {
+        useRefresh.mutate();
+        return;
+      }
+    }
+  }, [useReconnectQuery.isError]);
+
+  useEffect(() => {
+    useReconnectQuery.refetch();
+  }, []);
+
   return (
     <>
       <div className="z-1 relative">

@@ -3,6 +3,8 @@
 import { AGATE_GROTESK } from "@/shared/constants/constants";
 import { useAppContext } from "@/shared/contexts/App";
 import { useUserDataContext } from "@/shared/contexts/UserData";
+import { useGetUserData } from "@/shared/services/api/hooks/user/useGetUserData";
+import { useRefreshUser } from "@/shared/services/api/hooks/user/useRefreshToken";
 import { useGSAP } from "@gsap/react";
 import {
   Box,
@@ -27,7 +29,7 @@ import { gsap } from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import Image from "next/image";
 import Link from "next/link";
-import { useRef } from "react";
+import { useEffect, useRef } from "react";
 gsap.registerPlugin(ScrollTrigger);
 
 function PlayNowSection() {
@@ -273,6 +275,43 @@ function ChessSection() {
   );
 }
 const Home = () => {
+  const userData = useUserDataContext();
+  const useRefresh = useRefreshUser();
+  const getUserInfo = useGetUserData({
+    accessToken: userData.value.accessToken,
+  });
+
+  useEffect(() => {
+    if (userData.value.accessToken !== "") return;
+
+    useRefresh.mutate();
+  }, []);
+
+  useEffect(() => {
+    if (!getUserInfo.error) return;
+
+    userData.set({ accessToken: "", userName: "", name: "" });
+    const error = getUserInfo.error;
+    if (error && typeof error === "object" && "status" in error) {
+      const status = error.status;
+
+      if (status === 401) {
+        useRefresh.mutate();
+        return;
+      }
+    }
+  }, [getUserInfo.isError]);
+
+  useEffect(() => {
+    if (userData.value.accessToken === "" || !getUserInfo.isSuccess) return;
+
+    const user = getUserInfo.data.user;
+    userData.set({
+      ...userData.value,
+      userName: user.userName,
+      name: user.name,
+    });
+  }, [getUserInfo.isSuccess]);
   useGSAP(() => {
     gsap.from("#title", {
       y: -200,

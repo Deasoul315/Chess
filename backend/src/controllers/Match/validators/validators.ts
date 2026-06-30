@@ -2,7 +2,6 @@ import { z } from "zod";
 import { ColorEnum, DomainEnum } from "../../../constants.ts/constants";
 
 export const makeRoomSchema = z.object({
-  userName: z.string().min(1, "Invalid userName"),
   color: z.enum(ColorEnum),
   domain: z.enum(DomainEnum),
   increment: z
@@ -16,7 +15,6 @@ export const makeRoomSchema = z.object({
 });
 
 export const configRoomSchema = z.object({
-  userName: z.string().min(1, "Invalid userName"),
   color: z.enum(ColorEnum),
   domain: z.enum(DomainEnum),
   increment: z
@@ -33,29 +31,22 @@ export const getRoomParamsSchema = z.object({
   code: z.string().min(1, "Invalid room code"),
 });
 
-export const getRoomByIdParamsSchema = z.object({
-  userName: z.string().min(1),
-});
+export const getRoomByIdParamsSchema = z.object({});
 
 export const joinRoomSchema = z.object({
   code: z.string().min(1, "Invalid matchCode"),
-  guestName: z.string().min(1, "Invalid guestName"),
 });
 
 export const makeReadySchema = z.object({
-  userName: z.string().min(1),
   code: z.string().min(1),
   color: z.enum(ColorEnum),
   isReady: z.boolean(),
 });
 
-export const randomRoomSchema = z.object({
-  userName: z.string().min(1),
-});
+export const randomRoomSchema = z.object({});
 
 export const spectateRoomSchema = z.object({
   code: z.string().min(1, "Invalid room code"),
-  userName: z.string(),
 });
 
 export const activeRoomsSchema = z.object({});

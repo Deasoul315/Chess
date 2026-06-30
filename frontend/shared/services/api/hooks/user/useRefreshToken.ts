@@ -6,17 +6,22 @@ import { useAppContext } from "@/shared/contexts/App";
 
 const userApi = new UserApi();
 
-export function useCreateUser() {
+export function useRefreshUser() {
   const userData = useUserDataContext();
   const app = useAppContext();
   return useMutation({
-    mutationFn: async (payload: UserProps) => await userApi.post(payload),
+    mutationFn: async () => await userApi.refreshToken(),
     onSuccess: (data, variables) => {
-      app.didPressSignupCloseFn();
       userData.set({
-        userName: variables.userName,
-        name: variables.name,
+        ...userData.value,
         accessToken: data.accessToken,
+      });
+    },
+    onError: () => {
+      userData.set({
+        userName: "",
+        name: "",
+        accessToken: "",
       });
     },
   });

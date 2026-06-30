@@ -5,18 +5,24 @@ export function createAccessToken(userId: string) {
   return jwt.sign({ userId }, process.env.JWT_SECRET!, { expiresIn: "15m" });
 }
 
-export function authenticate(req: Request, res: Response) {
-  const authHeader = req.headers.authorization;
+export function createRefreshToken(userId: string) {
+  return jwt.sign({ userId }, process.env.REFRESH_SECRET!, {
+    expiresIn: "7d",
+  });
+}
 
-  if (!authHeader?.startsWith("Bearer ")) {
-    return false;
+export function authenticate(req: Request) {
+  const headerAuth = req.headers.authorization;
+
+  if (!headerAuth?.startsWith("Bearer ")) {
+    return null;
   }
 
-  const token = authHeader.split(" ")[1];
+  const token = headerAuth.replace("Bearer ", "");
 
   try {
     const payload = jwt.verify(token, process.env.JWT_SECRET!) as {
-      userId: string;
+      userId: number;
     };
 
     return payload.userId;
@@ -25,24 +31,33 @@ export function authenticate(req: Request, res: Response) {
   }
 }
 
-export function refresh(req: Request) {
-  const refreshToken = req.cookies.refreshToken;
+export function authenticateByToken(accessToken: string) {
+  try {
+    const payload = jwt.verify(accessToken, process.env.JWT_SECRET!) as {
+      userId: number;
+    };
 
-  if (!refreshToken) {
-    return false;
+    return payload.userId;
+  } catch {
+    return null;
   }
+}
+
+export function refreshAccessToken(req: Request) {
+  const refreshToken = req.cookies?.refreshToken;
+
+  if (!refreshToken) return null;
 
   try {
     const payload = jwt.verify(refreshToken, process.env.REFRESH_SECRET!) as {
-      userId: string;
+      userId: number;
     };
-
+    console.log("verified");
     const accessToken = jwt.sign(
       { userId: payload.userId },
       process.env.JWT_SECRET!,
       { expiresIn: "15m" },
     );
-
     return accessToken;
   } catch {
     return null;

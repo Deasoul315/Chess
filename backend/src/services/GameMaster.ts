@@ -13,18 +13,23 @@ export class GameMaster {
   private _playerInTurn: "HOST" | "GUEST" | "";
   private isMoveBoard: boolean[][];
   private _winner: "HOST" | "GUEST" | "DRAW" | null;
-  private _hostTime: null | number;
-  private _guestTime: null | number;
-  private _hostRegisterTime: null | number;
-  private _guestRegisterTime: null | number;
+  private _hostTime: number;
+  private _guestTime: number;
+  private _hostRegisterTime: number;
+  private _guestRegisterTime: number;
   private _increment: number;
   private _code: string;
+  private _version: number;
 
   constructor(
     hostPlayer: Player,
     guestPlayer: Player,
     increment: number,
     code: string,
+    guestTime: number,
+    hostTime: number,
+    hostRegisterTime: number,
+    guestRegisterTime: number,
   ) {
     this._board = createInitBoard();
     this._hostPlayer = hostPlayer;
@@ -33,12 +38,13 @@ export class GameMaster {
     this._playerInTurn = "";
     this.isMoveBoard = [...Array(8)].map(() => Array(8).fill(false));
     this._winner = null;
-    this._guestRegisterTime = null;
-    this._hostRegisterTime = null;
-    this._hostTime = null;
-    this._guestTime = null;
+    this._guestRegisterTime = guestRegisterTime;
+    this._hostRegisterTime = hostRegisterTime;
+    this._hostTime = hostTime;
+    this._guestTime = guestTime;
     this._increment = increment;
     this._code = code;
+    this._version = 0;
   }
 
   set increment(increment: number) {
@@ -68,6 +74,10 @@ export class GameMaster {
 
   get guestTime() {
     return this._guestTime;
+  }
+
+  get version() {
+    return this._version;
   }
 
   public setTime(value: {
@@ -113,7 +123,7 @@ export class GameMaster {
     }
   }
 
-  public isTimeOut() {
+  public updateGameState() {
     const isTimeLegit = this.isTimeLegit();
     if (isTimeLegit === "GUEST") {
       this.endGame("HOST");
@@ -215,7 +225,7 @@ export class GameMaster {
   }
 
   private async endGame(winner: "HOST" | "GUEST" | "DRAW") {
-    console.log();
+    this._version++;
     this._winner = winner;
     const { data, error } = await supabase
       .from("Room")
@@ -229,7 +239,7 @@ export class GameMaster {
     if (error) throw "failed to end game";
   }
   public move(
-    username: string,
+    userId: number,
     fromX: number,
     fromY: number,
     toX: number,
@@ -253,7 +263,7 @@ export class GameMaster {
     }
 
     logger.info("[MOVE_ATTEMPT]", {
-      username,
+      userId,
       from: { x: fromX, y: fromY },
       to: { x: toX, y: toY },
       currentTurn: this._playerInTurn,
@@ -265,15 +275,15 @@ export class GameMaster {
 
     if (!piece) return false;
 
-    if (this._hostPlayer.username === username) {
+    if (this._hostPlayer.id === userId) {
       team = this._hostPlayer.team;
       player = "HOST";
-    } else if (this._guestPlayer.username === username) {
+    } else if (this._guestPlayer.id === userId) {
       team = this._guestPlayer.team;
       player = "GUEST";
     } else {
       logger.warn("[MOVE_REJECTED] Unknown player tried to move", {
-        username,
+        userId,
       });
 
       return false;
@@ -281,7 +291,7 @@ export class GameMaster {
 
     if (this._playerInTurn !== player) {
       logger.warn("[MOVE_REJECTED] Not player's turn", {
-        username,
+        userId,
         playerRole: player,
         currentTurn: this._playerInTurn,
       });
@@ -300,7 +310,7 @@ export class GameMaster {
 
     if (!canMove) {
       logger.warn("[MOVE_REJECTED] Illegal move", {
-        username,
+        userId,
         from: { x: fromX, y: fromY },
         to: { x: toX, y: toY },
       });
@@ -319,7 +329,7 @@ export class GameMaster {
     );
     if (isChecked) {
       logger.warn("[MOVE_REJECTED] can be eaten this move", {
-        username,
+        userId,
         from: { x: fromX, y: fromY },
         to: { x: toX, y: toY },
       });
@@ -353,13 +363,13 @@ export class GameMaster {
       const winner = this.playerInTurn === "GUEST" ? "HOST" : "GUEST";
       this.endGame(winner);
       logger.warn(`[MOVE_SUCCESS] ${this._winner} wins`, {
-        username,
+        userId,
         from: { x: fromX, y: fromY },
         to: { x: toX, y: toY },
       });
     } else if (referee.isDraw(board)) {
       logger.warn(`DRAW`, {
-        username,
+        userId,
         from: { x: fromX, y: fromY },
         to: { x: toX, y: toY },
       });
@@ -367,11 +377,12 @@ export class GameMaster {
     }
 
     this.isMoveBoard[fromX][fromY] = true;
+
+    this._version++;
     this.updateTimer();
     this.togglePlayerInTurn();
-    // console.log(this._board);
     logger.info("[MOVE_SUCCESS]", {
-      username,
+      userId,
       movedFrom: { x: fromX, y: fromY },
       movedTo: { x: toX, y: toY },
       nextTurn: this._playerInTurn,
@@ -381,11 +392,11 @@ export class GameMaster {
     return true;
   }
 
-  public surrender(userName: string) {
-    if (this.hostPlayer.username === userName) {
-      this._winner = "GUEST";
+  public surrender(userId: number) {
+    if (this.hostPlayer.id === userId) {
+      this.endGame("HOST");
     } else {
-      this._winner = "HOST";
+      this.endGame("GUEST");
     }
   }
 }

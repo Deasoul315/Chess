@@ -13,7 +13,6 @@ export const logInSchema = z.object({
 });
 
 export const editSchema = z.object({
-  userName: z.string(),
   name: z.string().min(1),
   newPassword: z.string().min(6),
   oldPassword: z.string().min(6),

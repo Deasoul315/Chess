@@ -5,7 +5,10 @@ import { MatchApi } from "../../api";
 
 const matchApi = new MatchApi();
 
-const useGetRandomRoom = (payload: { userName: string }) => {
+const useGetRandomRoom = (payload: {
+  userName: string;
+  accessToken: string;
+}) => {
   const query = useQuery({
     queryKey: ["random-players", payload.userName],
     queryFn: async () => await matchApi.getRandomMatch(payload),

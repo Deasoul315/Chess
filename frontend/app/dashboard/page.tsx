@@ -6,6 +6,8 @@ import useGetActiveMatches from "@/shared/services/api/hooks/match/useGetActiveM
 import { useGetDailyStats } from "@/shared/services/api/hooks/score/useGetDailyStats";
 import { useGetLeaderboard } from "@/shared/services/api/hooks/score/useGetLeaderBoard";
 import { useGetScore } from "@/shared/services/api/hooks/score/useGetScore";
+import { useGetUserData } from "@/shared/services/api/hooks/user/useGetUserData";
+import { useRefreshUser } from "@/shared/services/api/hooks/user/useRefreshToken";
 import { AreaChart } from "@mantine/charts";
 import {
   Container,
@@ -24,14 +26,83 @@ import {
 } from "@mantine/core";
 import { TrophyIcon } from "@phosphor-icons/react";
 import Link from "next/link";
+import { useEffect } from "react";
 
 export default function DashboardPage() {
   const userData = useUserDataContext();
-  const scoreQuery = useGetScore(userData.value.userName);
+  const scoreQuery = useGetScore(userData.value.userName, {
+    accessToken: userData.value.accessToken,
+  });
   const leaderBoardQuery = useGetLeaderboard();
-  const userStats = useGetDailyStats(userData.value.userName);
+  const userStats = useGetDailyStats(userData.value.userName, {
+    accessToken: userData.value.accessToken,
+  });
   const activeMatchesPoll = useGetActiveMatches({});
-  const match = useMatchContext();
+  const useRefresh = useRefreshUser();
+  const getUserInfo = useGetUserData({
+    accessToken: userData.value.accessToken,
+  });
+
+  useEffect(() => {
+    if (userData.value.accessToken !== "") return;
+
+    useRefresh.mutate();
+  }, []);
+
+  useEffect(() => {
+    if (!getUserInfo.error && !userStats.error && !scoreQuery.error) return;
+
+    userData.set({ accessToken: "", userName: "", name: "" });
+
+    const error = getUserInfo.error;
+    if (error && typeof error === "object" && "status" in error) {
+      const status = error.status;
+
+      if (status === 401) {
+        useRefresh.mutate();
+        return;
+      }
+    }
+
+    const userStatsError = userStats.error;
+    if (
+      userStatsError &&
+      typeof userStatsError === "object" &&
+      "status" in userStatsError
+    ) {
+      const status = userStatsError.status;
+
+      if (status === 401) {
+        useRefresh.mutate();
+        return;
+      }
+    }
+
+    const scoreError = scoreQuery.error;
+    if (
+      scoreError &&
+      typeof scoreError === "object" &&
+      "status" in scoreError
+    ) {
+      const status = scoreError.status;
+
+      if (status === 401) {
+        useRefresh.mutate();
+        return;
+      }
+    }
+  }, [getUserInfo.isError, userStats.isError, scoreQuery.isError]);
+
+  useEffect(() => {
+    if (userData.value.accessToken === "" || !getUserInfo.isSuccess) return;
+
+    const user = getUserInfo.data.user;
+    userData.set({
+      ...userData.value,
+      userName: user.userName,
+      name: user.name,
+    });
+  }, [getUserInfo.isSuccess]);
 
   return (
     <Container size="xl" py="lg" c={"var(--text)"}>

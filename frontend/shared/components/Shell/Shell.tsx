@@ -24,7 +24,6 @@ import { useUserDataContext } from "@/shared/contexts/UserData";
 const Shell = ({ children }: { children: React.ReactNode }) => {
   const userData = useUserDataContext();
   const isMobile = useMediaQuery("(max-width: 768px)");
-
   return (
     <AppShell
       padding="md"

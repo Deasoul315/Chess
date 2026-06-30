@@ -7,6 +7,7 @@ import React from "react";
 const initUserData: UserData = {
   userName: "",
   name: "",
+  accessToken: "",
   // totalPoints: 0,
   // matchesPlayedCount: 0,
   // countEarnedMatches: 0,

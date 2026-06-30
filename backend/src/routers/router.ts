@@ -1,4 +1,3 @@
-// routes/user.routes.ts
 import { Router } from "express";
 import { MatchController } from "../controllers/Match/MatchController";
 import { UserController } from "../controllers/User/UserController";
@@ -24,7 +23,8 @@ import {
   scoreSchema,
 } from "../controllers/Score/validators/validators";
 import { ScoreController } from "../controllers/Score/ScoreController";
-import { Database } from "../types/supabase";
+import { badRequest, ok, unauthorized, validate } from "../utilities/utilities";
+import { authenticate, refreshAccessToken } from "../lib/jwt";
 
 const router = Router();
 
@@ -33,223 +33,221 @@ const matchController = new MatchController();
 const scoreController = new ScoreController();
 
 //
-// =======================
 // USER ROUTES
-// =======================
 //
 
+router.post("/user/refresh", (req, res) => {
+  const accessToken = refreshAccessToken(req);
+
+  if (!accessToken)
+    return badRequest(res, "couldnt make new token with provided token");
+
+  return ok(res, { success: true, accessToken });
+});
+
+router.get("/user", (req, res) => {
+  const userId = authenticate(req);
+
+  if (!userId) return unauthorized(res, "unauthorized");
+
+  return userController.getData(userId, res);
+});
+
+router.patch("/user/signout", (req, res) => {
+  const userId = authenticate(req);
+
+  if (!userId) return unauthorized(res, "unauthorized");
+
+  return userController.signOut(res);
+});
+
 router.post("/user/signup", (req, res) => {
-  const result = createUserSchema.safeParse(req.body);
+  const data = validate(createUserSchema, req.body);
 
-  if (!result.success) {
-    return res.status(400).json({
-      message: "Validation failed",
-      errors: result.error.flatten(),
-    });
-  }
+  if (!data) return badRequest(res, "invalid data");
 
-  return userController.post(result.data, res);
+  return userController.post(data, res);
 });
 
 router.post("/user/login", (req, res) => {
-  const result = logInSchema.safeParse(req.body);
+  const data = validate(logInSchema, req.body);
 
-  if (!result.success) {
-    return res.status(400).json({
-      message: "Validation failed",
-      errors: result.error.flatten(),
-    });
-  }
+  if (!data) return badRequest(res, "invalid data");
 
-  return userController.get(result.data, res);
+  return userController.get(data, res);
 });
 
 router.patch("/user/edit", (req, res) => {
-  const result = editSchema.safeParse(req.body);
+  const userId = authenticate(req);
 
-  if (!result.success) {
-    return res.status(400).json({
-      message: "Validation failed",
-      errors: result.error.flatten(),
-    });
-  }
+  if (!userId) return unauthorized(res, "unauthorized");
 
-  return userController.patch(result.data, res);
+  const data = validate(editSchema, req.body);
+
+  if (!data) return badRequest(res, "invalid data");
+
+  return userController.patch(userId, data, res);
 });
+
+//
+// SCORE ROUTES
+//
+
 router.get("/history", (req, res) => {
-  const result = historySchema.safeParse(req.query);
+  const userId = authenticate(req);
 
-  if (!result.success) {
-    return res.status(400).json({
-      message: "Validation failed",
-      errors: result.error.flatten(),
-    });
-  }
+  if (!userId) return unauthorized(res, "unauthorized");
 
-  return scoreController.getHistory(result.data, res);
+  const data = validate(historySchema, req.query);
+
+  if (!data) return badRequest(res, "invalid data");
+
+  return scoreController.getHistory(userId, data, res);
 });
 
 router.get("/score", (req, res) => {
-  console.log("SCORE");
-  const result = scoreSchema.safeParse(req.query);
-  console.log(req.query);
-  if (!result.success) {
-    return res.status(400).json({
-      message: "Validation failed",
-      errors: result.error.flatten(),
-    });
-  }
+  const userId = authenticate(req);
 
-  return scoreController.getScore(result.data, res);
+  if (!userId) return unauthorized(res, "unauthorized");
+
+  const data = validate(scoreSchema, req.query);
+
+  if (!data) return badRequest(res, "invalid data");
+
+  return scoreController.getScore(userId, data, res);
 });
 
 router.get("/daily-stats", (req, res) => {
-  console.log("DSCORE");
-  const result = scoreSchema.safeParse(req.query);
+  const userId = authenticate(req);
 
-  if (!result.success) {
-    return res.status(400).json({
-      message: "Validation failed",
-      errors: result.error.flatten(),
-    });
-  }
+  if (!userId) return unauthorized(res, "unauthorized");
 
-  return scoreController.getDailyStats(result.data, res);
+  const data = validate(scoreSchema, req.query);
+
+  if (!data) return badRequest(res, "invalid data");
+
+  return scoreController.getDailyStats(userId, data, res);
 });
 
 router.get("/leaderboard", (req, res) => {
-  console.log("LSCORE");
-  const result = leaderboardSchema.safeParse(req.query);
+  const data = validate(leaderboardSchema, req.query);
 
-  if (!result.success) {
-    return res.status(400).json({
-      message: "Validation failed",
-      errors: result.error.flatten(),
-    });
-  }
+  if (!data) return badRequest(res, "invalid data");
 
-  return scoreController.getLeaderboard(result.data, res);
+  return scoreController.getLeaderboard(data, res);
 });
+
 //
-// =======================
 // MATCH ROUTES
-// =======================
 //
 
 router.post("/match", (req, res) => {
-  const result = makeRoomSchema.safeParse(req.body);
+  const userId = authenticate(req);
 
-  if (!result.success) {
-    return res.status(400).json({
-      message: "Validation failed",
-      errors: result.error.flatten(),
-    });
-  }
+  if (!userId) return unauthorized(res, "unauthorized");
 
-  return matchController.makeRoom(result.data, res);
+  const data = validate(makeRoomSchema, req.body);
+
+  if (!data) return badRequest(res, "invalid data");
+
+  return matchController.makeRoom(userId, data, res);
 });
 
 router.post("/match/config", (req, res) => {
-  const result = configRoomSchema.safeParse(req.body);
+  const userId = authenticate(req);
 
-  if (!result.success) {
-    return res.status(400).json({
-      message: "Validation failed",
-      errors: result.error.flatten(),
-    });
-  }
+  if (!userId) return unauthorized(res, "unauthorized");
 
-  return matchController.configRoom(result.data, res);
+  const data = validate(configRoomSchema, req.body);
+
+  if (!data) return badRequest(res, "invalid data");
+
+  return matchController.configRoom(userId, data, res);
 });
 
-router.get("/match/random/:userName", (req, res) => {
-  const result = randomRoomSchema.safeParse(req.params);
-  console.log("RANDOM ROOM");
-  if (!result.success) {
-    return res.status(400).json({
-      message: "Invalid params",
-      errors: result.error.flatten(),
-    });
-  }
+router.get("/match/random", (req, res) => {
+  const userId = authenticate(req);
 
-  return matchController.randomRoom(result.data, res);
+  if (!userId) return unauthorized(res, "unauthorized");
+
+  const data = validate(randomRoomSchema, req.params);
+
+  if (!data) return badRequest(res, "invalid data");
+
+  return matchController.randomRoom(userId, data, res);
 });
 
 router.get("/match/spectate", (req, res) => {
-  console.log("got query ", req.query);
-  const result = spectateRoomSchema.safeParse(req.query);
+  const userId = authenticate(req);
 
-  if (!result.success) {
-    return res.status(400).json({
-      message: "Invalid params",
-      errors: result.error.flatten(),
-    });
-  }
+  if (!userId) return unauthorized(res, "unauthorized");
 
-  return matchController.spectate(result.data, res);
+  const data = validate(spectateRoomSchema, req.query);
+
+  if (!data) return badRequest(res, "invalid data");
+
+  return matchController.spectate(userId, data, res);
 });
+
 router.get("/match/active", (req, res) => {
-  const result = activeRoomsSchema.safeParse(req.params);
+  const userId = authenticate(req);
 
-  if (!result.success) {
-    return res.status(400).json({
-      message: "Invalid params",
-      errors: result.error.flatten(),
-    });
-  }
+  if (!userId) return unauthorized(res, "unauthorized");
 
-  return matchController.getActiveRooms(result.data, res);
+  const data = validate(activeRoomsSchema, req.params);
+
+  if (!data) return badRequest(res, "invalid data");
+
+  return matchController.getActiveRooms(data, res);
 });
+
 router.get("/match/reconnect", (req, res) => {
-  const result = getRoomByIdParamsSchema.safeParse(req.query);
+  const userId = authenticate(req);
 
-  if (!result.success) {
-    return res.status(400).json({
-      message: "Invalid params",
-      errors: result.error.flatten(),
-    });
-  }
+  if (!userId) return unauthorized(res, "unauthorized");
 
-  return matchController.getRoomByUsername(result.data, res);
+  const data = validate(getRoomByIdParamsSchema, req.query);
+
+  if (!data) return badRequest(res, "invalid data");
+
+  return matchController.getRoomByUsername(userId, data, res);
 });
+
 router.get("/match/:code", (req, res) => {
-  const result = getRoomParamsSchema.safeParse(req.params);
+  const userId = authenticate(req);
 
-  if (!result.success) {
-    return res.status(400).json({
-      message: "Invalid params",
-      errors: result.error.flatten(),
-    });
-  }
+  if (!userId) return unauthorized(res, "unauthorized");
 
-  return matchController.getRoom(result.data, res);
+  const data = validate(getRoomParamsSchema, req.params);
+
+  if (!data) return badRequest(res, "invalid data");
+
+  return matchController.getRoom(userId, data, res);
 });
+
 router.patch("/match", (req, res) => {
-  const result = joinRoomSchema.safeParse(req.body);
+  const userId = authenticate(req);
 
-  if (!result.success) {
-    return res.status(400).json({
-      message: "Validation failed",
-      errors: result.error.flatten(),
-    });
-  }
+  if (!userId) return unauthorized(res, "unauthorized");
 
-  return matchController.joinRoom(result.data, res);
+  const data = validate(joinRoomSchema, req.body);
+
+  if (!data) return badRequest(res, "invalid data");
+
+  return matchController.joinRoom(userId, data, res);
 });
 
 router.patch("/match/ready", (req, res) => {
-  const result = makeReadySchema.safeParse(req.body);
+  const userId = authenticate(req);
 
-  if (!result.success) {
-    return res.status(400).json({
-      message: "Validation failed",
-      errors: result.error.flatten(),
-    });
-  }
+  if (!userId) return unauthorized(res, "unauthorized");
 
-  return matchController.makeReady(result.data, res);
+  const data = validate(makeReadySchema, req.body);
+
+  if (!data) return badRequest(res, "invalid data");
+
+  return matchController.makeReady(userId, data, res);
 });
 
 export default router;
-
 export { router };

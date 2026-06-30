@@ -99,6 +99,7 @@ const ACTIONS = {
   SWITCH_CHAT: "SWITCH_CHAT",
   RESYNC: "RESYNC",
   RESET: "RESET",
+  SET_SOCKET: "SET_SOCKET",
 } as const;
 type Action =
   | {
@@ -190,6 +191,10 @@ type Action =
   | {
       type: typeof ACTIONS.RESET;
       params: {};
+    }
+  | {
+      type: typeof ACTIONS.SET_SOCKET;
+      params: { socket: WebSocket };
     };
 function matchReducer(prevState: Match, action: Action): Match {
   switch (action.type) {
@@ -483,6 +488,16 @@ function matchReducer(prevState: Match, action: Action): Match {
           host: Math.max(action.params.host, 0),
           guest: Math.max(0, action.params.guest),
         },
+      };
+    }
+    case "SET_SOCKET": {
+      const socket = prevState.socket;
+      if (socket) {
+        socket.close();
+      }
+      return {
+        ...prevState,
+        socket: action.params.socket,
       };
     }
     case "RESYNC": {

@@ -4,13 +4,14 @@ import { useUserDataContext } from "@/shared/contexts/UserData";
 import { MatchApi } from "../../api";
 import { useMatchContext } from "@/shared/contexts/Match";
 import { Domain, PieceColor } from "@/shared/constants/types";
+import { useRefreshUser } from "../user/useRefreshToken";
 
 const matchApi = new MatchApi();
 
 export function useJoinMatch() {
   const match = useMatchContext();
   return useMutation({
-    mutationFn: async (payload: { code: string; guestName: string }) =>
+    mutationFn: async (payload: { code: string; accessToken: string }) =>
       await matchApi.joinMatch(payload),
     onSuccess: (data, variables) => {
       match.dispatch({
@@ -25,6 +26,16 @@ export function useJoinMatch() {
           hostName: data.hostName,
         },
       });
+    },
+    onError: async (error: any) => {
+      const status = error?.response?.status;
+
+      if (status === 401) {
+        const useRefresh = await useRefreshUser();
+        await useRefresh.mutateAsync();
+
+        return;
+      }
     },
   });
 }
