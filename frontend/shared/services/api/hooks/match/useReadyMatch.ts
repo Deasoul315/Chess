@@ -145,15 +145,19 @@ export function useReadyMatch() {
                     e && typeof e === "object" && "status" in e;
                   if (errorTypeGuard && e.status === 401) {
                     let retry = 1;
-                    let result = null;
+                    let refresh = null;
                     while (retry) {
-                      result = await userApi.refreshToken();
+                      try {
+                        refresh = await userApi.refreshToken();
+                      } catch (e) {
+                        console.log("refresh crash ", e);
+                      }
 
                       if (result) break;
 
                       retry--;
                     }
-                    if (!result) {
+                    if (!refresh) {
                       userData.set({
                         userName: "",
                         name: "",
@@ -163,7 +167,7 @@ export function useReadyMatch() {
                     }
                     userData.set({
                       ...userData.value,
-                      accessToken: result.accessToken,
+                      accessToken: refresh.accessToken,
                     });
                   }
                 }
