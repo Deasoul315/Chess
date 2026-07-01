@@ -246,7 +246,6 @@ export class MatchApi {
     });
 
     if (!response.ok) {
-      const error = await response.json();
       throw makeError(response);
     }
 
@@ -282,7 +281,6 @@ export class MatchApi {
       },
     });
     if (!response.ok) {
-      const error = await response.json();
       throw makeError(response);
     }
 
@@ -386,7 +384,6 @@ export class MatchApi {
       },
     });
     if (!response.ok) {
-      const error = await response.json();
       throw makeError(response);
     }
     return response.json();
