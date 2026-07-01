@@ -27,7 +27,7 @@ export class ScoreController {
       const { data: matches, error } = await supabase
         .from("Room")
         .select("host, guest, status, created_at")
-        .or(`host.eq.${username},guest.eq.${username}`)
+        .or(`host.eq.${userId},guest.eq.${userId}`)
         .not("host", "is", null)
         .not("guest", "is", null)
         .not("status", "is", null)
@@ -69,8 +69,8 @@ export class ScoreController {
         if (match.status === "DRAW") {
           acc[date].draws++;
         } else if (
-          (match.status === "HOST" && match.host === username) ||
-          (match.status === "GUEST" && match.guest === username)
+          (match.status === "HOST" && match.host === userId) ||
+          (match.status === "GUEST" && match.guest === userId)
         ) {
           acc[date].wins++;
         } else {
@@ -108,7 +108,7 @@ export class ScoreController {
         .not("host", "is", null)
         .not("guest", "is", null)
         .not("status", "is", null)
-        .or(`host.eq.${username},guest.eq.${username}`);
+        .or(`host.eq.${userId},guest.eq.${userId}`);
 
       if (error) {
         logger.error("[SCORE_GET] DB error:", error);
@@ -117,14 +117,14 @@ export class ScoreController {
 
       const wins = matches.filter(
         (m) =>
-          (m.status === "HOST" && m.host === username) ||
-          (m.status === "GUEST" && m.guest === username),
+          (m.status === "HOST" && m.host === userId) ||
+          (m.status === "GUEST" && m.guest === userId),
       ).length;
 
       const losses = matches.filter(
         (m) =>
-          (m.status === "HOST" && m.guest === username) ||
-          (m.status === "GUEST" && m.host === username),
+          (m.status === "HOST" && m.guest === userId) ||
+          (m.status === "GUEST" && m.host === userId),
       ).length;
 
       const draws = matches.filter((m) => m.status === "DRAW").length;
@@ -158,7 +158,7 @@ export class ScoreController {
       const { data: matches, error } = await supabase
         .from("Room")
         .select("*")
-        .or(`host.eq.${username},guest.eq.${username}`)
+        .or(`host.eq.${userId},guest.eq.${userId}`)
         .not("host", "is", null)
         .not("guest", "is", null)
         .not("status", "is", null)
@@ -175,8 +175,8 @@ export class ScoreController {
         if (match.status === "DRAW") {
           result = "DRAW";
         } else if (
-          (match.status === "HOST" && match.host === username) ||
-          (match.status === "GUEST" && match.guest === username)
+          (match.status === "HOST" && match.host === userId) ||
+          (match.status === "GUEST" && match.guest === userId)
         ) {
           result = "WIN";
         } else {

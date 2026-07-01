@@ -275,7 +275,12 @@ export class MatchApi {
     }[];
     status: boolean;
   }> {
-    const response = await fetch(`${API}/match/active`);
+    const response = await fetch(`${API}/match/active`, {
+      method: "GET",
+      headers: {
+        "ngrok-skip-browser-warning": "true",
+      },
+    });
     if (!response.ok) {
       const error = await response.json();
       throw makeError(response);
