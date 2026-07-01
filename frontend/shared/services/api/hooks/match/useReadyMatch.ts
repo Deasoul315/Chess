@@ -134,7 +134,7 @@ export function useReadyMatch() {
           if (!match.value.winner) {
             try {
               console.log("refetch order");
-              await queryClient.refetchQueries({
+              await queryClient.fetchQuery({
                 queryKey: ["reconnect"],
               });
               // queryClient.invalidateQueries({
