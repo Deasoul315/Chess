@@ -59,7 +59,7 @@ export function refreshAccessToken(req: Request) {
     const accessToken = jwt.sign(
       { userId: payload.userId },
       process.env.JWT_SECRET!,
-      { expiresIn: "15m" },
+      { expiresIn: JWT_ACCESS_TOKEN_AGE },
     );
     return accessToken;
   } catch {

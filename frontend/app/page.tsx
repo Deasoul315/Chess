@@ -289,7 +289,7 @@ const Home = () => {
 
   useEffect(() => {
     if (!getUserInfo.error) return;
-
+    console.log("ERROR revert access");
     userData.set({ accessToken: "", userName: "", name: "" });
     const error = getUserInfo.error;
     if (error && typeof error === "object" && "status" in error) {

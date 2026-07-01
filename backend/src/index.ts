@@ -5,16 +5,17 @@ import express from "express";
 import cors from "cors";
 import { router } from "./routers/router";
 
-import http from "node:http";
+import https from "node:https";
 import cookieParser from "cookie-parser";
 import { makeSocketServer } from "./lib/websocket";
 import { PORT } from "./config";
+import fs from "fs";
 const app = express();
 
 app.use(cookieParser());
 app.use(
   cors({
-    origin: ["https://chess-silk-sigma.vercel.app", "http://localhost:3000"],
+    origin: ["https://chess-silk-sigma.vercel.app"],
     credentials: true,
   }),
 );
@@ -22,7 +23,15 @@ app.use(express.json());
 
 app.use(router);
 
-const server = http.createServer(app);
+const server = https.createServer(
+  {
+    key: fs.readFileSync("src/certificates/key.pem"),
+    cert: fs.readFileSync("src/certificates/cert.pem"),
+  },
+  app,
+);
+
+// const server = http.createServer(app);
 
 const wss = makeSocketServer(server);
 

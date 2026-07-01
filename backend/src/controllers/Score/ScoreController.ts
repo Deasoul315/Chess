@@ -212,7 +212,7 @@ export class ScoreController {
 
       const leaderboard = await Promise.all(
         users.map(async (user) => {
-          const username = user.user_name;
+          const id = user.id;
 
           const { data: matches, error } = await supabase
             .from("Room")
@@ -220,26 +220,26 @@ export class ScoreController {
             .not("host", "is", null)
             .not("guest", "is", null)
             .not("status", "is", null)
-            .or(`host.eq.${username},guest.eq.${username}`);
+            .or(`host.eq.${id},guest.eq.${id}`);
 
           if (error) throw error;
 
           const wins = matches.filter(
             (m) =>
-              (m.status === "HOST" && m.host === username) ||
-              (m.status === "GUEST" && m.guest === username),
+              (m.status === "HOST" && m.host === id) ||
+              (m.status === "GUEST" && m.guest === id),
           ).length;
 
           const losses = matches.filter(
             (m) =>
-              (m.status === "HOST" && m.guest === username) ||
-              (m.status === "GUEST" && m.host === username),
+              (m.status === "HOST" && m.guest === id) ||
+              (m.status === "GUEST" && m.host === id),
           ).length;
 
           const draws = matches.filter((m) => m.status === "DRAW").length;
 
           return {
-            userName: username,
+            userName: user.user_name,
             wins,
             losses,
             draws,
