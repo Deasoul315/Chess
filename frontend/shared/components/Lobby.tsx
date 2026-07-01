@@ -538,65 +538,70 @@ function JoinRoom({
 
       socket.onclose = async () => {
         if (!match.value.winner) {
-          let retry = 3;
-          let result = null;
-          while (retry) {
-            result = await useReconnect.refetch();
-
-            if (result.data) break;
-            const err = result.error;
-            const errorTypeGuard =
-              err && typeof err === "object" && "status" in err;
-            if (errorTypeGuard && err.status === 401) {
-              let retry = 1;
-              let refresh: any = null;
-              while (retry) {
-                try {
-                  refresh = await useRefresh.mutateAsync();
-                } catch {}
-
-                if (refresh) break;
-
-                retry--;
-              }
-              if (!refresh) {
-                user.set({
-                  userName: "",
-                  name: "",
-                  accessToken: "",
-                });
-                return;
-              }
-              user.set({
-                ...user.value,
-                accessToken: refresh.accessToken as any,
-              });
-            }
-
-            retry--;
+          try {
+            await useReconnect.refetch();
+          } catch (e) {
+            console.log(e);
           }
-          if (!result) return;
-          if (!result.data) return;
+          // let retry = 3;
+          // let result = null;
+          // while (retry) {
+          //   result = await useReconnect.refetch();
 
-          match.dispatch({
-            type: "RESYNC",
-            params: {
-              board: result.data.board,
-              guestTime: result.data.guestTime,
-              hostTime: result.data.hostTime,
-              teamInTurn: result.data.playerInTurn,
-            },
-          });
+          //   if (result.data) break;
+          //   const err = result.error;
+          //   const errorTypeGuard =
+          //     err && typeof err === "object" && "status" in err;
+          //   if (errorTypeGuard && err.status === 401) {
+          //     let retry = 1;
+          //     let refresh: any = null;
+          //     while (retry) {
+          //       try {
+          //         refresh = await useRefresh.mutateAsync();
+          //       } catch {}
 
-          const res = connectSocket(retries - 1);
+          //       if (refresh) break;
 
-          if (res)
-            match.dispatch({
-              type: "SET_SOCKET",
-              params: {
-                socket: res,
-              },
-            });
+          //       retry--;
+          //     }
+          //     if (!refresh) {
+          //       user.set({
+          //         userName: "",
+          //         name: "",
+          //         accessToken: "",
+          //       });
+          //       return;
+          //     }
+          //     user.set({
+          //       ...user.value,
+          //       accessToken: refresh.accessToken as any,
+          //     });
+          //   }
+
+          //   retry--;
+          // }
+          // if (!result) return;
+          // if (!result.data) return;
+
+          // match.dispatch({
+          //   type: "RESYNC",
+          //   params: {
+          //     board: result.data.board,
+          //     guestTime: result.data.guestTime,
+          //     hostTime: result.data.hostTime,
+          //     teamInTurn: result.data.playerInTurn,
+          //   },
+          // });
+
+          // const res = connectSocket(retries - 1);
+
+          // if (res)
+          //   match.dispatch({
+          //     type: "SET_SOCKET",
+          //     params: {
+          //       socket: res,
+          //     },
+          //   });
         }
       };
 
@@ -885,66 +890,71 @@ function Matchmaking({
 
       socket.onclose = async () => {
         if (!match.value.winner) {
-          let retry = 3;
-          let result = null;
-          while (retry) {
-            result = await useReconnect.refetch();
-
-            if (result.data) break;
-            const err = result.error;
-            const errorTypeGuard =
-              err && typeof err === "object" && "status" in err;
-            if (errorTypeGuard && err.status === 401) {
-              let retry = 1;
-              let refresh: any = null;
-              while (retry) {
-                try {
-                  refresh = await useRefresh.mutateAsync();
-                } catch {}
-
-                if (refresh) break;
-
-                retry--;
-              }
-              if (!refresh) {
-                userData.set({
-                  userName: "",
-                  name: "",
-                  accessToken: "",
-                });
-                return;
-              }
-              userData.set({
-                ...userData.value,
-                accessToken: refresh.accessToken as any,
-              });
-            }
-
-            retry--;
+          try {
+            await useReconnect.refetch();
+          } catch (e) {
+            console.log(e);
           }
-          if (!result) return;
+          // let retry = 3;
+          // let result = null;
+          // while (retry) {
+          //   result = await useReconnect.refetch();
 
-          if (!result.data) return;
+          //   if (result.data) break;
+          //   const err = result.error;
+          //   const errorTypeGuard =
+          //     err && typeof err === "object" && "status" in err;
+          //   if (errorTypeGuard && err.status === 401) {
+          //     let retry = 1;
+          //     let refresh: any = null;
+          //     while (retry) {
+          //       try {
+          //         refresh = await useRefresh.mutateAsync();
+          //       } catch {}
 
-          match.dispatch({
-            type: "RESYNC",
-            params: {
-              board: result.data.board,
-              guestTime: result.data.guestTime,
-              hostTime: result.data.hostTime,
-              teamInTurn: result.data.playerInTurn,
-            },
-          });
+          //       if (refresh) break;
 
-          const res = reconnect(retries - 1);
+          //       retry--;
+          //     }
+          //     if (!refresh) {
+          //       userData.set({
+          //         userName: "",
+          //         name: "",
+          //         accessToken: "",
+          //       });
+          //       return;
+          //     }
+          //     userData.set({
+          //       ...userData.value,
+          //       accessToken: refresh.accessToken as any,
+          //     });
+          //   }
 
-          if (res)
-            match.dispatch({
-              type: "SET_SOCKET",
-              params: {
-                socket: res,
-              },
-            });
+          //   retry--;
+          // }
+          // if (!result) return;
+
+          // if (!result.data) return;
+
+          // match.dispatch({
+          //   type: "RESYNC",
+          //   params: {
+          //     board: result.data.board,
+          //     guestTime: result.data.guestTime,
+          //     hostTime: result.data.hostTime,
+          //     teamInTurn: result.data.playerInTurn,
+          //   },
+          // });
+
+          // const res = reconnect(retries - 1);
+
+          // if (res)
+          //   match.dispatch({
+          //     type: "SET_SOCKET",
+          //     params: {
+          //       socket: res,
+          //     },
+          //   });
         }
       };
       socket.onerror = () => {
@@ -1142,65 +1152,70 @@ function Spectate({
 
       socket.onclose = async () => {
         if (!match.value.winner) {
-          let retry = 3;
-          let result = null;
-          while (retry) {
-            result = await useReconnect.refetch();
-
-            if (result.data) break;
-            const err = result.error;
-            const errorTypeGuard =
-              err && typeof err === "object" && "status" in err;
-            if (errorTypeGuard && err.status === 401) {
-              let retry = 1;
-              let refresh: any = null;
-              while (retry) {
-                try {
-                  refresh = await useRefresh.mutateAsync();
-                } catch {}
-
-                if (refresh) break;
-
-                retry--;
-              }
-              if (!refresh) {
-                userData.set({
-                  userName: "",
-                  name: "",
-                  accessToken: "",
-                });
-                return;
-              }
-              userData.set({
-                ...userData.value,
-                accessToken: refresh.accessToken as any,
-              });
-            }
-            retry--;
+          try {
+            await useReconnect.refetch();
+          } catch (e) {
+            console.log(e);
           }
-          if (!result) return;
+          // let retry = 3;
+          // let result = null;
+          // while (retry) {
+          //   result = await useReconnect.refetch();
 
-          if (!result.data) return;
+          //   if (result.data) break;
+          //   const err = result.error;
+          //   const errorTypeGuard =
+          //     err && typeof err === "object" && "status" in err;
+          //   if (errorTypeGuard && err.status === 401) {
+          //     let retry = 1;
+          //     let refresh: any = null;
+          //     while (retry) {
+          //       try {
+          //         refresh = await useRefresh.mutateAsync();
+          //       } catch {}
 
-          match.dispatch({
-            type: "RESYNC",
-            params: {
-              board: result.data.board,
-              guestTime: result.data.guestTime,
-              hostTime: result.data.hostTime,
-              teamInTurn: result.data.playerInTurn,
-            },
-          });
+          //       if (refresh) break;
 
-          const res = reconnect(retries - 1);
+          //       retry--;
+          //     }
+          //     if (!refresh) {
+          //       userData.set({
+          //         userName: "",
+          //         name: "",
+          //         accessToken: "",
+          //       });
+          //       return;
+          //     }
+          //     userData.set({
+          //       ...userData.value,
+          //       accessToken: refresh.accessToken as any,
+          //     });
+          //   }
+          //   retry--;
+          // }
+          // if (!result) return;
 
-          if (res)
-            match.dispatch({
-              type: "SET_SOCKET",
-              params: {
-                socket: res,
-              },
-            });
+          // if (!result.data) return;
+
+          // match.dispatch({
+          //   type: "RESYNC",
+          //   params: {
+          //     board: result.data.board,
+          //     guestTime: result.data.guestTime,
+          //     hostTime: result.data.hostTime,
+          //     teamInTurn: result.data.playerInTurn,
+          //   },
+          // });
+
+          // const res = reconnect(retries - 1);
+
+          // if (res)
+          //   match.dispatch({
+          //     type: "SET_SOCKET",
+          //     params: {
+          //       socket: res,
+          //     },
+          //   });
         }
       };
 
@@ -1425,65 +1440,70 @@ export default function Lobby() {
 
       socket.onclose = async () => {
         if (!match.value.winner) {
-          let retry = 3;
-          let result = null;
-          while (retry) {
-            result = await useReconnectQuery.refetch();
-
-            if (result.data) break;
-            const err = result.error;
-            const errorTypeGuard =
-              err && typeof err === "object" && "status" in err;
-            if (errorTypeGuard && err.status === 401) {
-              let retry = 1;
-              let refresh: any = null;
-              while (retry) {
-                try {
-                  refresh = await useRefresh.mutateAsync();
-                } catch {}
-
-                if (refresh) break;
-
-                retry--;
-              }
-              if (!refresh) {
-                user.set({
-                  userName: "",
-                  name: "",
-                  accessToken: "",
-                });
-                return;
-              }
-              user.set({
-                ...user.value,
-                accessToken: refresh.accessToken as any,
-              });
-            }
-            retry--;
+          try {
+            await useReconnectQuery.refetch();
+          } catch (e) {
+            console.log(e);
           }
-          if (!result) return;
+          // let retry = 3;
+          // let result = null;
+          // while (retry) {
+          //   result = await useReconnectQuery.refetch();
 
-          if (!result.data) return;
+          //   if (result.data) break;
+          //   const err = result.error;
+          //   const errorTypeGuard =
+          //     err && typeof err === "object" && "status" in err;
+          //   if (errorTypeGuard && err.status === 401) {
+          //     let retry = 1;
+          //     let refresh: any = null;
+          //     while (retry) {
+          //       try {
+          //         refresh = await useRefresh.mutateAsync();
+          //       } catch {}
 
-          match.dispatch({
-            type: "RESYNC",
-            params: {
-              board: result.data.board,
-              guestTime: result.data.guestTime,
-              hostTime: result.data.hostTime,
-              teamInTurn: result.data.playerInTurn,
-            },
-          });
+          //       if (refresh) break;
 
-          const res = reconnect(retries - 1);
+          //       retry--;
+          //     }
+          //     if (!refresh) {
+          //       user.set({
+          //         userName: "",
+          //         name: "",
+          //         accessToken: "",
+          //       });
+          //       return;
+          //     }
+          //     user.set({
+          //       ...user.value,
+          //       accessToken: refresh.accessToken as any,
+          //     });
+          //   }
+          //   retry--;
+          // }
+          // if (!result) return;
 
-          if (res)
-            match.dispatch({
-              type: "SET_SOCKET",
-              params: {
-                socket: res,
-              },
-            });
+          // if (!result.data) return;
+
+          // match.dispatch({
+          //   type: "RESYNC",
+          //   params: {
+          //     board: result.data.board,
+          //     guestTime: result.data.guestTime,
+          //     hostTime: result.data.hostTime,
+          //     teamInTurn: result.data.playerInTurn,
+          //   },
+          // });
+
+          // const res = reconnect(retries - 1);
+
+          // if (res)
+          //   match.dispatch({
+          //     type: "SET_SOCKET",
+          //     params: {
+          //       socket: res,
+          //     },
+          //   });
         }
       };
 
@@ -1620,65 +1640,70 @@ export default function Lobby() {
 
       socket.onclose = async () => {
         if (!match.value.winner) {
-          let retry = 3;
-          let result = null;
-          while (retry) {
-            result = await useReconnectQuery.refetch();
-
-            if (result.data) break;
-            const err = result.error;
-            const errorTypeGuard =
-              err && typeof err === "object" && "status" in err;
-            if (errorTypeGuard && err.status === 401) {
-              let retry = 1;
-              let refresh: any = null;
-              while (retry) {
-                try {
-                  refresh = await useRefresh.mutateAsync();
-                } catch {}
-
-                if (refresh) break;
-
-                retry--;
-              }
-              if (!refresh) {
-                user.set({
-                  userName: "",
-                  name: "",
-                  accessToken: "",
-                });
-                return;
-              }
-              user.set({
-                ...user.value,
-                accessToken: refresh.accessToken as any,
-              });
-            }
-            retry--;
+          try {
+            await useReconnectQuery.refetch();
+          } catch (e) {
+            console.log(e);
           }
-          if (!result) return;
+          // let retry = 3;
+          // let result = null;
+          // while (retry) {
+          //   result = await useReconnectQuery.refetch();
 
-          if (!result.data) return;
+          //   if (result.data) break;
+          //   const err = result.error;
+          //   const errorTypeGuard =
+          //     err && typeof err === "object" && "status" in err;
+          //   if (errorTypeGuard && err.status === 401) {
+          //     let retry = 1;
+          //     let refresh: any = null;
+          //     while (retry) {
+          //       try {
+          //         refresh = await useRefresh.mutateAsync();
+          //       } catch {}
 
-          match.dispatch({
-            type: "RESYNC",
-            params: {
-              board: result.data.board,
-              guestTime: result.data.guestTime,
-              hostTime: result.data.hostTime,
-              teamInTurn: result.data.playerInTurn,
-            },
-          });
+          //       if (refresh) break;
 
-          const res = connectSocket(retries - 1);
+          //       retry--;
+          //     }
+          //     if (!refresh) {
+          //       user.set({
+          //         userName: "",
+          //         name: "",
+          //         accessToken: "",
+          //       });
+          //       return;
+          //     }
+          //     user.set({
+          //       ...user.value,
+          //       accessToken: refresh.accessToken as any,
+          //     });
+          //   }
+          //   retry--;
+          // }
+          // if (!result) return;
 
-          if (res)
-            match.dispatch({
-              type: "SET_SOCKET",
-              params: {
-                socket: res,
-              },
-            });
+          // if (!result.data) return;
+
+          // match.dispatch({
+          //   type: "RESYNC",
+          //   params: {
+          //     board: result.data.board,
+          //     guestTime: result.data.guestTime,
+          //     hostTime: result.data.hostTime,
+          //     teamInTurn: result.data.playerInTurn,
+          //   },
+          // });
+
+          // const res = connectSocket(retries - 1);
+
+          // if (res)
+          //   match.dispatch({
+          //     type: "SET_SOCKET",
+          //     params: {
+          //       socket: res,
+          //     },
+          //   });
         }
       };
 

@@ -1,5 +1,5 @@
 import { UserProps } from "@/shared/types/types";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useUserDataContext } from "@/shared/contexts/UserData";
 import { MatchApi, UserApi } from "../../api";
 import { useMatchContext } from "@/shared/contexts/Match";
@@ -13,6 +13,7 @@ const userApi = new UserApi();
 export function useReadyMatch() {
   const match = useMatchContext();
   const userData = useUserDataContext();
+  const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (payload: {
       code: string;
@@ -132,77 +133,84 @@ export function useReadyMatch() {
 
           if (!match.value.winner) {
             try {
-              let retry = 3;
-              let result = null;
-              while (retry) {
-                try {
-                  result = await matchApi.reconnectMatch({
-                    accessToken: userData.value.accessToken,
-                  });
-                } catch (e) {
-                  console.log("CRASH", e);
-                  const errorTypeGuard =
-                    e && typeof e === "object" && "status" in e;
-                  if (errorTypeGuard && e.status === 401) {
-                    let retry = 1;
-                    let refresh = null;
-                    while (retry) {
-                      try {
-                        refresh = await userApi.refreshToken();
-                      } catch (e) {
-                        console.log("refresh crash ", e);
-                      }
-
-                      if (result) break;
-
-                      retry--;
-                    }
-                    if (!refresh) {
-                      userData.set({
-                        userName: "",
-                        name: "",
-                        accessToken: "",
-                      });
-                      return;
-                    }
-                    userData.set({
-                      ...userData.value,
-                      accessToken: refresh.accessToken,
-                    });
-                  }
-                }
-
-                if (result) break;
-
-                retry--;
-              }
-              if (!result) return;
-
-              console.log("fetched ", result);
-
-              match.dispatch({
-                type: "RESYNC",
-                params: {
-                  board: result.board,
-                  guestTime: result.guestTime,
-                  hostTime: result.hostTime,
-                  teamInTurn: result.playerInTurn,
-                },
+              queryClient.invalidateQueries({
+                queryKey: ["reconnect"],
               });
-
-              const res = connectSocket(retries - 1);
-
-              if (res)
-                match.dispatch({
-                  type: "SET_SOCKET",
-                  params: {
-                    socket: res,
-                  },
-                });
-              console.log("socket", res);
-            } catch (e: unknown) {
-              console.log("CRASHS ", e);
+            } catch (e) {
+              console.log(e);
             }
+            // try {
+            //   let retry = 3;
+            //   let result = null;
+            //   while (retry) {
+            //     try {
+            //       result = await matchApi.reconnectMatch({
+            //         accessToken: userData.value.accessToken,
+            //       });
+            //     } catch (e) {
+            //       console.log("CRASH", e);
+            //       const errorTypeGuard =
+            //         e && typeof e === "object" && "status" in e;
+            //       if (errorTypeGuard && e.status === 401) {
+            //         let retry = 1;
+            //         let refresh = null;
+            //         while (retry) {
+            //           try {
+            //             refresh = await userApi.refreshToken();
+            //           } catch (e) {
+            //             console.log("refresh crash ", e);
+            //           }
+
+            //           if (result) break;
+
+            //           retry--;
+            //         }
+            //         if (!refresh) {
+            //           userData.set({
+            //             userName: "",
+            //             name: "",
+            //             accessToken: "",
+            //           });
+            //           return;
+            //         }
+            //         userData.set({
+            //           ...userData.value,
+            //           accessToken: refresh.accessToken,
+            //         });
+            //       }
+            //     }
+
+            //     if (result) break;
+
+            //     retry--;
+            //   }
+            //   if (!result) return;
+
+            //   console.log("fetched ", result);
+
+            //   match.dispatch({
+            //     type: "RESYNC",
+            //     params: {
+            //       board: result.board,
+            //       guestTime: result.guestTime,
+            //       hostTime: result.hostTime,
+            //       teamInTurn: result.playerInTurn,
+            //     },
+            //   });
+
+            //   const res = connectSocket(retries - 1);
+
+            //   if (res)
+            //     match.dispatch({
+            //       type: "SET_SOCKET",
+            //       params: {
+            //         socket: res,
+            //       },
+            //     });
+            //   console.log("socket", res);
+            // } catch (e: unknown) {
+            //   console.log("CRASHS ", e);
+            // }
           }
         };
 
