@@ -375,6 +375,8 @@ export class MatchApi {
   }
 
   async reconnectMatch(payload: { accessToken: string }) {
+    console.log("before fetch");
+
     const response = await fetch(`${API}/match/reconnect`, {
       method: "GET",
       headers: {
@@ -383,9 +385,14 @@ export class MatchApi {
         Authorization: `Bearer ${payload.accessToken}`,
       },
     });
+
+    console.log("after fetch", response.status, response.ok);
+
     if (!response.ok) {
+      console.log("throwing", response.status);
       throw makeError(response);
     }
+
     return response.json();
   }
   // Host starts match
