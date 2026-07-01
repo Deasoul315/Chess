@@ -1740,7 +1740,18 @@ export default function Lobby() {
       "status" in error &&
       error.status === 401
     ) {
-      useRefresh.mutate();
+      async function refresh() {
+        try {
+          const refresh = await useRefresh.mutateAsync();
+          if (refresh) {
+            useReconnectQuery.refetch();
+          }
+        } catch {}
+      }
+
+      refresh();
+
+      return;
     }
   }, [useReconnectQuery.isError, useReconnectQuery.error]);
 
