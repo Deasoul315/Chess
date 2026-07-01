@@ -168,7 +168,17 @@ function Room({
       const status = error.status;
 
       if (status === 401) {
-        useRefresh.mutate();
+        async function refresh() {
+          try {
+            const refresh = await useRefresh.mutateAsync();
+            if (refresh) {
+              pollPlayers.refetch();
+            }
+          } catch {}
+        }
+
+        refresh();
+
         return;
       }
     }
@@ -637,7 +647,17 @@ function JoinRoom({
       const status = error.status;
 
       if (status === 401) {
-        useRefresh.mutate();
+        async function refresh() {
+          try {
+            const refresh = await useRefresh.mutateAsync();
+            if (refresh) {
+              pollPlayers.refetch();
+            }
+          } catch {}
+        }
+
+        refresh();
+
         return;
       }
     }
@@ -971,7 +991,17 @@ function Matchmaking({
       const status = error.status;
 
       if (status === 401) {
-        useRefresh.mutate();
+        async function refresh() {
+          try {
+            const refresh = await useRefresh.mutateAsync();
+            if (refresh) {
+              randomQuery.refetch();
+            }
+          } catch {}
+        }
+
+        refresh();
+
         return;
       }
     }
@@ -1215,7 +1245,17 @@ function Spectate({
       const status = error.status;
 
       if (status === 401) {
-        useRefresh.mutate();
+        async function refresh() {
+          try {
+            const refresh = await useRefresh.mutateAsync();
+            if (refresh) {
+              spectateQuery.refetch();
+            }
+          } catch {}
+        }
+
+        refresh();
+
         return;
       }
     }
