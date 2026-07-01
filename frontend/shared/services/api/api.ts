@@ -47,6 +47,7 @@ export class UserApi {
     const response = await fetch(`${API}/user`, {
       method: "GET",
       headers: {
+        "ngrok-skip-browser-warning": "true",
         "Content-Type": "application/json",
         Authorization: `Bearer ${payload.accessToken}`,
       },
