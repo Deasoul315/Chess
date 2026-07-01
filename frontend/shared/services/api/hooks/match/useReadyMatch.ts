@@ -133,9 +133,13 @@ export function useReadyMatch() {
 
           if (!match.value.winner) {
             try {
-              queryClient.invalidateQueries({
+              console.log("refetch order");
+              await queryClient.refetchQueries({
                 queryKey: ["reconnect"],
               });
+              // queryClient.invalidateQueries({
+              //   queryKey: ["reconnect"],
+              // });
             } catch (e) {
               console.log(e);
             }
