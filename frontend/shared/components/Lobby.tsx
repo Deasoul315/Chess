@@ -172,7 +172,7 @@ function Room({
         return;
       }
     }
-  }, [pollPlayers.isError]);
+  }, [pollPlayers.isError, pollPlayers.error]);
   return (
     <>
       <Stack>
@@ -641,7 +641,7 @@ function JoinRoom({
         return;
       }
     }
-  }, [pollPlayers.isError]);
+  }, [pollPlayers.isError, pollPlayers.error]);
   return (
     <Stack>
       {!mutation.isSuccess && (
@@ -975,7 +975,7 @@ function Matchmaking({
         return;
       }
     }
-  }, [randomQuery.isError]);
+  }, [randomQuery.isError, randomQuery.error]);
 
   return (
     <Stack pos={"relative"} h={100}>
@@ -1219,7 +1219,7 @@ function Spectate({
         return;
       }
     }
-  }, [spectateQuery.isError]);
+  }, [spectateQuery.isError, spectateQuery.error]);
 
   return (
     <Stack>
@@ -1692,15 +1692,17 @@ export default function Lobby() {
 
     const error = useReconnectQuery.error;
 
-    if (error && typeof error === "object" && "status" in error) {
-      const status = error.status;
+    console.log("error:", error);
 
-      if (status === 401) {
-        useRefresh.mutate();
-        return;
-      }
+    if (
+      error &&
+      typeof error === "object" &&
+      "status" in error &&
+      error.status === 401
+    ) {
+      useRefresh.mutate();
     }
-  }, [useReconnectQuery.isError]);
+  }, [useReconnectQuery.isError, useReconnectQuery.error]);
 
   useEffect(() => {
     useReconnectQuery.refetch();
