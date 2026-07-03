@@ -13,7 +13,10 @@ const app = express();
 app.use(cookieParser());
 app.use(
   cors({
-    origin: ["https://chess-silk-sigma.vercel.app", "https://localhost:3000"],
+    origin: [
+      "https://chess-silk-sigma.vercel.app",
+      //  "https://localhost:3000"
+    ],
     credentials: true,
   }),
 );

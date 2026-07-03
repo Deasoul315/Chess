@@ -276,7 +276,6 @@ export class MatchController {
     const { code } = data;
     try {
       logger.info(`[GET_ROOM] ${code} for ${userId}`);
-      console.log(connections);
       const hostQuery = (_key: number, conn: Connection) =>
         conn.code === code &&
         conn.type === "CONTROLLED" &&

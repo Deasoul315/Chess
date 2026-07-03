@@ -47,7 +47,7 @@ export default function RootLayout({
         <ColorSchemeScript></ColorSchemeScript>
       </head>
       <body className="min-h-full flex flex-col">
-        <MantineProvider theme={theme} defaultColorScheme="dark">
+        <MantineProvider theme={theme} defaultColorScheme="light">
           <LocalQueryClientProvider>
             <UserDataContextProvider>
               <MatchContextProvider>
