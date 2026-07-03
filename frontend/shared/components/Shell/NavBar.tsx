@@ -5,6 +5,7 @@ import { useUserDataContext } from "@/shared/contexts/UserData";
 import { useSignOutUser } from "@/shared/services/api/hooks/user/useSignOutUser";
 import {
   ActionIcon,
+  Burger,
   Flex,
   Modal,
   Text,
@@ -16,6 +17,7 @@ import { useDisclosure } from "@mantine/hooks";
 import {
   DoorIcon,
   HeartIcon,
+  ListDashesIcon,
   MoonIcon,
   PersonIcon,
   SignOutIcon,
@@ -23,6 +25,7 @@ import {
   UserIcon,
 } from "@phosphor-icons/react";
 import Image from "next/image";
+import { useEffect } from "react";
 
 const NavBar = ({
   logo,
@@ -41,11 +44,27 @@ const NavBar = ({
   const userData = useUserDataContext();
   const useSignOut = useSignOutUser();
   const app = useAppContext();
+
+  useEffect(() => {
+    if (userData.value.userName === "") return;
+
+    app.didPressSignupCloseFn();
+  }, [userData.value.userName]);
+
   return (
     <div className="bg-(--primary) text-(--text) w-full h-full flex items-center px-2">
       <Flex justify={"space-between"} w={"100%"} align={"center"}>
         {/* left */}
         <div className="flex items-center gap-2">
+          <ActionIcon
+            bg={"var(--primary)"}
+            c={"var(--text)"}
+            size={40}
+            onClick={app.toggleSideBar}
+            hiddenFrom="md"
+          >
+            <ListDashesIcon size={"100%"}></ListDashesIcon>
+          </ActionIcon>
           <Image src={logo.icon} width={40} height={40} alt=""></Image>
           {/* <h1 className="text-(length:--mantine-font-size-mySize)">text</h1> */}
           <Title visibleFrom="md" order={1}>

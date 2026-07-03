@@ -12,15 +12,12 @@ export function useRefreshUser() {
   return useMutation({
     mutationFn: async () => await userApi.refreshToken(),
     onSuccess: (data, variables) => {
-      console.log("success");
       userData.set({
         ...userData.value,
         accessToken: data.accessToken,
       });
     },
     onError: () => {
-      console.log("fail");
-
       userData.set({
         userName: "",
         name: "",

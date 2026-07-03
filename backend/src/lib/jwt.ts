@@ -55,7 +55,6 @@ export function refreshAccessToken(req: Request) {
     const payload = jwt.verify(refreshToken, process.env.REFRESH_SECRET!) as {
       userId: number;
     };
-    console.log("verified");
     const accessToken = jwt.sign(
       { userId: payload.userId },
       process.env.JWT_SECRET!,

@@ -2,6 +2,8 @@ import {
   Button,
   FocusTrap,
   Group,
+  Loader,
+  LoadingOverlay,
   Stack,
   Text,
   TextInput,
@@ -51,7 +53,9 @@ const UserSignInForm = () => {
     }
 
     if (!userNameRegex.test(userName)) {
-      setError("Invalid username format");
+      setError(
+        "Invalid username format, the allowed characters are alphabet, underscore and numbers",
+      );
       return;
     }
 
@@ -67,7 +71,7 @@ const UserSignInForm = () => {
 
   const isMobile = useMediaQuery("(max-width: 768px)");
   return (
-    <>
+    <Stack>
       {query.isSuccess && (
         <Stack align="center">
           <Title order={5} hiddenFrom="md">
@@ -87,28 +91,30 @@ const UserSignInForm = () => {
       {!query.isSuccess && (
         <Stack>
           <form className="flex flex-col gap-3" onSubmit={(e) => submitUser(e)}>
-            <TextInput
-              name="userName"
-              label="Username"
-              placeholder="username123"
-              autoFocus
-              size={isMobile ? "md" : "lg"}
-              styles={{
-                label: {
-                  fontWeight: "var(--bold)",
-                },
-                input: {
-                  fontWeight: "var(--bold)",
-                },
-              }}
-            />
+            <Stack pos={"relative"}>
+              <TextInput
+                name="userName"
+                label="Username"
+                placeholder="username123"
+                autoFocus
+                size={isMobile ? "md" : "lg"}
+                styles={{
+                  label: {
+                    fontWeight: "var(--bold)",
+                  },
+                  input: {
+                    fontWeight: "var(--bold)",
+                  },
+                }}
+              />
 
-            <TextInput
-              name="password"
-              label="Password"
-              placeholder="password"
-              size={isMobile ? "md" : "lg"}
-            />
+              <TextInput
+                name="password"
+                label="Password"
+                placeholder="password"
+                size={isMobile ? "md" : "lg"}
+              />
+            </Stack>
 
             <Group flex={"flex"} justify="flex-end">
               <Button
@@ -116,7 +122,7 @@ const UserSignInForm = () => {
                 color="var(--primary)"
                 size={isMobile ? "md" : "lg"}
               >
-                submit
+                {query.isFetching ? <Loader /> : "Submit"}
               </Button>
             </Group>
           </form>
@@ -125,7 +131,7 @@ const UserSignInForm = () => {
           {query.isError && <Text c={"red"}>{query.error.message}</Text>}
         </Stack>
       )}
-    </>
+    </Stack>
   );
 };
 

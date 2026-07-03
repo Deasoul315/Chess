@@ -41,6 +41,11 @@
 
   --bold: 900;
   --semi-bold: 700;
+
+  --spacing-xl: 32px;
+  --spacing-lg: 24px;
+  --spacing-md: 16px;
+  --spacing-sm: 8px;
 }
 
 [data-mantine-color-scheme="light"] body {

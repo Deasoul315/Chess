@@ -24,7 +24,6 @@ export function useEditUser() {
     },
     onError: async (error: any) => {
       const status = error?.response?.status;
-      console.log(error.response);
       if (status === 401) {
         const useRefresh = await useRefreshUser();
         await useRefresh.mutateAsync();

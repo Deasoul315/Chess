@@ -364,6 +364,7 @@ export class MatchApi {
       headers: {
         "Content-Type": "application/json",
         "ngrok-skip-browser-warning": "true",
+        Authorization: `Bearer ${payload.accessToken}`,
       },
     });
 
@@ -375,8 +376,6 @@ export class MatchApi {
   }
 
   async reconnectMatch(payload: { accessToken: string }) {
-    console.log("before fetch");
-
     const response = await fetch(`${API}/match/reconnect`, {
       method: "GET",
       headers: {
@@ -386,10 +385,7 @@ export class MatchApi {
       },
     });
 
-    console.log("after fetch", response.status, response.ok);
-
     if (!response.ok) {
-      console.log("throwing", response.status);
       throw makeError(response);
     }
 

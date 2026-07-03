@@ -1,4 +1,12 @@
-import { Button, Group, Stack, Text, TextInput, Title } from "@mantine/core";
+import {
+  Button,
+  Group,
+  Loader,
+  Stack,
+  Text,
+  TextInput,
+  Title,
+} from "@mantine/core";
 import React, { useState } from "react";
 import { useUserDataContext } from "../contexts/UserData";
 import { useCreateUser } from "../services/api/hooks/user/useCreateUser";
@@ -47,12 +55,16 @@ const UserSignUpForm = () => {
     }
 
     if (!userNameRegex.test(userName)) {
-      setError("Username doesn't match format");
+      setError(
+        "Invalid username format, the allowed characters are alphabet, underscore and numbers",
+      );
       return;
     }
 
     if (!passwordRegex.test(password)) {
-      setError("Password must be at least 8 characters");
+      setError(
+        "Invalid password format, it must be 8 characters at least contain digit special caps and small letters",
+      );
       return;
     }
 
@@ -148,7 +160,7 @@ const UserSignUpForm = () => {
                 size="md"
                 hiddenFrom="md"
               >
-                submit
+                {mutation.isPending ? <Loader /> : "Submit"}
               </Button>
 
               <Button
@@ -157,7 +169,7 @@ const UserSignUpForm = () => {
                 size={isMobile ? "md" : "lg"}
                 visibleFrom="md"
               >
-                submit
+                {mutation.isPending ? <Loader /> : "Submit"}
               </Button>
             </Group>
           </form>

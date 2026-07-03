@@ -144,7 +144,6 @@ export class Referee {
       }
 
       case "ROOK": {
-        // console.log(board)
         let i: number = x + 1;
         while (i >= 0 && i < 8) {
           //since you acess . key typescript doesnt understand it same thing use var first
@@ -317,9 +316,7 @@ export class Referee {
         };
         const piece = board[x][y];
         if (!piece) break;
-        console.log("is move board", isMoveBoard);
         if (isMoveBoard[kPos.x][kPos.y]) break;
-        console.log("allow");
         if (
           !isMoveBoard[rRookPos.x][rRookPos.y] &&
           !board[x][y + 1] &&
@@ -581,7 +578,6 @@ export class Referee {
       }
 
       case "ROOK": {
-        // console.log(board)
         let i: number = x + 1;
         while (i >= 0 && i < 8) {
           //since you acess . key typescript doesnt understand it same thing use var first
@@ -989,10 +985,7 @@ export class Referee {
         if (!piece || piece.team !== enemyTeam) continue;
 
         const moves = this.extractDangerPlacements(x, y, board);
-        // console.log("danger zones for piece ", piece, moves);
         if (moves[kingX][kingY] === "ATTACK") {
-          // console.log("piece can attack enemy king ", piece);
-          // console.log("king is at", kingX, kingY);
           return true;
         }
       }
@@ -1006,7 +999,6 @@ export class Referee {
     board: (Piece | null)[][],
     isMoveBoard: boolean[][],
   ): boolean {
-    // console.log("can this team escape ? ", team);
     for (let x = 0; x < 8; x++) {
       for (let y = 0; y < 8; y++) {
         const piece = board[x][y];
@@ -1015,7 +1007,6 @@ export class Referee {
 
         const moves = this.extractCorrectPlacements(x, y, board, isMoveBoard);
 
-        // console.log("trying for this piece ", piece);
         for (let tx = 0; tx < 8; tx++) {
           for (let ty = 0; ty < 8; ty++) {
             if (moves[tx][ty] === "INVALID") continue;
@@ -1026,9 +1017,7 @@ export class Referee {
             tempBoard[tx][ty] = tempBoard[x][y];
             tempBoard[x][y] = null;
 
-            // if king survives, check can be escaped
             if (!this.isChecked(team, tempBoard)) {
-              console.log("can escape with move ", tx, ty);
               return true;
             }
           }

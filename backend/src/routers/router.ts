@@ -46,11 +46,8 @@ router.post("/user/refresh", (req, res) => {
 });
 
 router.get("/user", (req, res) => {
-  console.log("auth");
   const userId = authenticate(req);
-  console.log("authed");
   if (!userId) return unauthorized(res, "unauthorized");
-  console.log("get data");
 
   return userController.getData(userId, res);
 });

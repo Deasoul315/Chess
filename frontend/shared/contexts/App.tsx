@@ -7,6 +7,10 @@ type AppContextType = {
   didPressSignup: boolean;
   didPressSignupOpenFn: () => void;
   didPressSignupCloseFn: () => void;
+  isOpenSideBar: boolean;
+  openSideBar: () => void;
+  closeSideBar: () => void;
+  toggleSideBar: () => void;
 };
 
 const AppContext = createContext<AppContextType | null>(null);
@@ -20,13 +24,20 @@ export function AppContextProvider({
     didPressSignup,
     { open: didPressSignupOpenFn, close: didPressSignupCloseFn },
   ] = useDisclosure(false);
-
+  const [
+    isOpenSideBar,
+    { open: openSideBar, close: closeSideBar, toggle: toggleSideBar },
+  ] = useDisclosure(false);
   return (
     <AppContext.Provider
       value={{
         didPressSignup,
         didPressSignupOpenFn,
         didPressSignupCloseFn,
+        isOpenSideBar,
+        openSideBar,
+        closeSideBar,
+        toggleSideBar,
       }}
     >
       {children}

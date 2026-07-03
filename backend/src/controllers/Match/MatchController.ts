@@ -276,6 +276,7 @@ export class MatchController {
     const { code } = data;
     try {
       logger.info(`[GET_ROOM] ${code} for ${userId}`);
+      console.log(connections);
       const hostQuery = (_key: number, conn: Connection) =>
         conn.code === code &&
         conn.type === "CONTROLLED" &&
@@ -297,7 +298,7 @@ export class MatchController {
       );
 
       if (!hostConnection || !hostUserId) {
-        logger.info("[GET_ROOM] not found host");
+        // logger.info("[GET_ROOM] not found host");
         return badRequest(res, "not found host");
       }
 
@@ -437,7 +438,9 @@ export class MatchController {
           }
 
           const isReusableRandomSlot =
-            connection && connection.type === "RANDOM";
+            connection &&
+            connection.type === "RANDOM" &&
+            connection.master === null;
 
           if (!isReusableRandomSlot) {
             const { data: userData } = await userService.findById(userId);
@@ -853,7 +856,7 @@ export class MatchController {
         !hostConnection.master.winner &&
         !guestConnection.master.winner;
 
-      if (isGameActive) {
+      if (!isGameActive) {
         logger.warn("[SPECTATE] Game not ready", {
           host: hostUserId,
         });
@@ -890,7 +893,7 @@ export class MatchController {
       }
 
       if (!alreadySpectatingGuest) {
-        hostConnection.spectators.push({
+        guestConnection.spectators.push({
           userId: userId,
           socket: null,
         });

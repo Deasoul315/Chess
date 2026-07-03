@@ -134,7 +134,6 @@ export class UserController {
 
       const token = createAccessToken(userData.id);
       const refreshToken = createRefreshToken(userData.id);
-      console.log("TOKEN", refreshToken);
       res.cookie("refreshToken", refreshToken, cookieConfig);
 
       return ok(res, {

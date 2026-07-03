@@ -10,6 +10,7 @@ import {
   Flex,
   Grid,
   Group,
+  Loader,
   LoadingOverlay,
   Modal,
   Overlay,
@@ -33,7 +34,7 @@ import { useReadyMatch } from "../services/api/hooks/match/useReadyMatch";
 import useGetRoom from "../services/api/hooks/match/useGetRoom";
 import { useSpecateMatch } from "../services/api/hooks/match/useSpectateMatch";
 import useGetRandomRoom from "../services/api/hooks/match/useGetRandomRoom";
-import { useDisclosure } from "@mantine/hooks";
+import { useDisclosure, useMediaQuery } from "@mantine/hooks";
 import Logger from "./Logger";
 import { useConfigMatch } from "../services/api/hooks/match/useConfigMatch";
 import Chat from "./Chat";
@@ -41,7 +42,7 @@ import { useReconnectMatch } from "../services/api/hooks/match/useReconnectMatch
 import Timer from "./Timer";
 import { useSearchParams } from "next/navigation";
 import { RECONNECT_RETRY_COUNT, WS_URI } from "../config";
-import { useQueryClient } from "@tanstack/react-query";
+import { useIsFetching, useQueryClient } from "@tanstack/react-query";
 import { useRefreshUser } from "../services/api/hooks/user/useRefreshToken";
 
 type LobbyView =
@@ -63,10 +64,28 @@ interface HomeProps {
 
 function LobbyHome({ onNavigate }: HomeProps) {
   const user = useUserDataContext();
-  const [error, setError] = useState<null | "JOIN" | "CREATE">(null);
+  const [error, setError] = useState<
+    null | "JOIN" | "CREATE" | "SPECTATE" | "RANDOM"
+  >(null);
   return (
     <Stack>
       <Button
+        hiddenFrom="md"
+        onClick={() => {
+          if (user.value.userName === "") {
+            setError("CREATE");
+            return;
+          }
+          onNavigate("create-room");
+        }}
+        color="primary"
+        size="md"
+      >
+        Create Room
+      </Button>
+
+      <Button
+        visibleFrom="md"
         onClick={() => {
           if (user.value.userName === "") {
             setError("CREATE");
@@ -79,10 +98,28 @@ function LobbyHome({ onNavigate }: HomeProps) {
       >
         Create Room
       </Button>
+
       {error === "CREATE" && (
         <Text c={"red"}>You Must Log In first before creating Room</Text>
       )}
+
       <Button
+        hiddenFrom="md"
+        onClick={() => {
+          if (user.value.userName === "") {
+            setError("JOIN");
+            return;
+          }
+          onNavigate("join-room");
+        }}
+        color="primary"
+        size="md"
+      >
+        Join Room
+      </Button>
+
+      <Button
+        visibleFrom="md"
         onClick={() => {
           if (user.value.userName === "") {
             setError("JOIN");
@@ -95,20 +132,78 @@ function LobbyHome({ onNavigate }: HomeProps) {
       >
         Join Room
       </Button>
+
       {error === "JOIN" && (
         <Text c={"red"}>You Must Log In first before joining Room</Text>
       )}
+
       <Button
-        onClick={() => onNavigate("matchmaking")}
+        hiddenFrom="md"
+        onClick={() => {
+          if (user.value.userName === "") {
+            setError("RANDOM");
+            return;
+          }
+          onNavigate("matchmaking");
+        }}
+        color="primary"
+        size="md"
+      >
+        Random Match Up
+      </Button>
+
+      <Button
+        visibleFrom="md"
+        onClick={() => {
+          if (user.value.userName === "") {
+            setError("RANDOM");
+            return;
+          }
+          onNavigate("matchmaking");
+        }}
         color="primary"
         size="lg"
       >
         Random Match Up
       </Button>
 
-      <Button onClick={() => onNavigate("spectate")} color="primary" size="lg">
+      {error === "RANDOM" && (
+        <Text c={"red"}>You Must Log In first before joining queue</Text>
+      )}
+
+      <Button
+        hiddenFrom="md"
+        onClick={() => {
+          if (user.value.userName === "") {
+            setError("SPECTATE");
+            return;
+          }
+          onNavigate("spectate");
+        }}
+        color="primary"
+        size="md"
+      >
         Spectate
       </Button>
+
+      <Button
+        visibleFrom="md"
+        onClick={() => {
+          if (user.value.userName === "") {
+            setError("SPECTATE");
+            return;
+          }
+          onNavigate("spectate");
+        }}
+        color="primary"
+        size="lg"
+      >
+        Spectate
+      </Button>
+
+      {error === "SPECTATE" && (
+        <Text c={"red"}>You Must Log In first before spectating</Text>
+      )}
     </Stack>
   );
 }
@@ -262,7 +357,7 @@ function Room({
               color="var(--primary)"
               size="lg"
             >
-              Challenge On!
+              {readyMutation.isPending ? <Loader></Loader> : "Challenge On!"}
             </Button>
             <Text size="md" c="red">
               {readyMutation.isError ? "Users must be ready first" : ""}
@@ -285,7 +380,7 @@ function Room({
               color="var(--primary)"
               size="lg"
             >
-              Save
+              {configMutation.isPending ? <Loader></Loader> : "Save"}
             </Button>
           </Stack>
         )}
@@ -318,7 +413,12 @@ function ConfigureRoom({
       <Title order={4}>Configure Room</Title>
       <Stack>
         {/* domain */}
-        <Flex align={"center"} gap={"10"}>
+        <Flex
+          align={{ md: "center" }}
+          direction={{ base: "column", md: "row" }}
+          gap={"10"}
+          w={"100%"}
+        >
           <Title order={5} w={titleWidth}>
             Domain
           </Title>
@@ -383,7 +483,11 @@ function ConfigureRoom({
             }
           />
         </Flex>
-        <Flex align={"center"} gap={"10"}>
+        <Flex
+          gap={"10"}
+          align={{ md: "center" }}
+          direction={{ base: "column", md: "row" }}
+        >
           <Title order={5} w={titleWidth}>
             Color
           </Title>
@@ -443,13 +547,10 @@ function JoinRoom({
     if (match.value.socket) return;
     const connectSocket = (retries: number) => {
       if (!retries) return null;
-      console.log("reconnect");
 
       const socket = new WebSocket(WS_URI);
 
       socket.onopen = () => {
-        console.log("connected");
-
         socket.send(
           JSON.stringify({
             type: "INIT",
@@ -700,7 +801,7 @@ function JoinRoom({
               </Flex>
               {error && <Text c={"red"}>{error}</Text>}
               <Button type="submit" color="var(--primary)" size="lg">
-                Join
+                {mutation.isPending ? <Loader></Loader> : "Save"}
               </Button>
             </Stack>
           </form>
@@ -769,7 +870,13 @@ function JoinRoom({
             color="var(--primary)"
             size="lg"
           >
-            {isReady ? "Hold on!" : "Ready!"}
+            {readyMutation.isPending ? (
+              <Loader></Loader>
+            ) : isReady ? (
+              "Hold on!"
+            ) : (
+              "Ready!"
+            )}
           </Button>
           {mutation.isError && <Text c={"red"}>Failed to Set Ready</Text>}
         </Stack>
@@ -800,8 +907,6 @@ function Matchmaking({
     setIsGameStart(true);
     function reconnect(retries: number) {
       if (!retries) return;
-      console.log("reconnect");
-
       const socket = new WebSocket(WS_URI);
 
       socket.onmessage = (event) => {
@@ -1057,8 +1162,6 @@ function Spectate({
     setIsGameStart(true);
     function reconnect(retries: number) {
       if (!retries) return null;
-      console.log("reconnect");
-
       const socket = new WebSocket(WS_URI);
 
       socket.onmessage = (event) => {
@@ -1310,7 +1413,7 @@ function Spectate({
             </Text>
           )}
           <Button type="submit" bg="var(--primary)" size="lg">
-            Join
+            {spectateQuery.isFetching ? <Loader></Loader> : "Join"}
           </Button>
         </Stack>
       </form>
@@ -1783,7 +1886,12 @@ export default function Lobby() {
   useEffect(() => {
     useReconnectQuery.refetch();
   }, []);
+  const isMobile = useMediaQuery("(max-width: 768px)");
+  const navWidth = 40;
 
+  const state = queryClient.getQueryState(["reconnect"]);
+
+  const isFetching = state?.fetchStatus === "fetching";
   return (
     <>
       <div className="z-1 relative">
@@ -1807,14 +1915,14 @@ export default function Lobby() {
               fontWeight: "var(--bold)",
             },
             content: {
-              marginLeft: 40,
-              width: "calc(100% - 40px)",
+              marginLeft: isMobile ? 0 : navWidth,
+              // width: "calc(100% - 40px)",
             },
             overlay: {
-              left: 40,
+              left: isMobile ? 0 : navWidth,
             },
             inner: {
-              padding: 40,
+              padding: isMobile ? 0 : navWidth,
             },
           }}
           style={{ backgroundColor: "transparent" }}
@@ -1858,34 +1966,42 @@ export default function Lobby() {
                 <Paper py={"xs"} px={"xs"} bg={"var(--primary)"} w={"100%"}>
                   <Flex justify={"space-between"}>
                     <Stack w={"100%"} gap={"0px"} align="center">
-                      <Flex gap={"xs"} justify={"center"}>
-                        <Title order={4} c={"var(--text)"}>
+                      <Flex gap={"xs"} justify={"center"} align={"center"}>
+                        <Title order={isMobile ? 6 : 4} c={"var(--text)"}>
                           Code :{" "}
                         </Title>
-                        <Text size="lg" c={"var(--text)"}>
+                        <Text fz={{ base: "md", md: "lg" }} c={"var(--text)"}>
                           {match.value.code}
                         </Text>
                       </Flex>
                       {match.value.winner ? (
-                        <Text size="lg" c={"var(--text)"}>
+                        <Text c={"var(--text)"} fz={{ base: "md", md: "lg" }}>
                           {`${match.value.winner === "DRAW" ? "DRAW" : match.value.winner === "HOST" ? `${match.value.hostName} has won the game` : `${match.value.guestName} has won the game`}`}{" "}
                         </Text>
                       ) : (
                         <Flex
                           justify={"space-between"}
                           w={"100%"}
-                          direction={{ base: "column", md: "row" }}
+                          direction="row"
                           c={"var(--text)"}
+                          gap={"0px"}
                         >
-                          <Stack>
-                            <Text size="lg" c={"var(--text)"}>
-                              {user.value.userName === match.value.hostName &&
-                              match.value.role === "PLAYER"
-                                ? "YOU: "
-                                : "OPPONENT: "}
-                            </Text>
+                          <Stack gap={"0px"}>
+                            {isMobile ? (
+                              ""
+                            ) : (
+                              <Text
+                                c={"var(--text)"}
+                                fz={{ base: "md", md: "lg" }}
+                              >
+                                {user.value.userName === match.value.hostName &&
+                                match.value.role === "PLAYER"
+                                  ? "YOU: "
+                                  : "OPPONENT: "}
+                              </Text>
+                            )}
                             <Text
-                              size="lg"
+                              fz={{ base: "md", md: "lg" }}
                               c={
                                 match.value.teamInTurn === "HOST"
                                   ? "green.9"
@@ -1913,15 +2029,23 @@ export default function Lobby() {
                               ""
                             )}
                           </Stack>
-                          <Stack>
-                            <Text size="lg" c={"var(--text)"}>
-                              {user.value.userName === match.value.guestName &&
-                              match.value.role === "PLAYER"
-                                ? "YOU: "
-                                : "OPPONENT: "}
-                            </Text>
+                          <Stack gap={"0px"}>
+                            {isMobile ? (
+                              ""
+                            ) : (
+                              <Text
+                                fz={{ base: "md", md: "lg" }}
+                                c={"var(--text)"}
+                              >
+                                {user.value.userName ===
+                                  match.value.guestName &&
+                                match.value.role === "PLAYER"
+                                  ? "YOU: "
+                                  : "OPPONENT: "}
+                              </Text>
+                            )}
                             <Text
-                              size="lg"
+                              fz={{ base: "md", md: "lg" }}
                               c={
                                 match.value.teamInTurn === "GUEST"
                                   ? "green.9"
@@ -1989,6 +2113,29 @@ export default function Lobby() {
                 ) : (
                   ""
                 )}
+                <LoadingOverlay
+                  visible={Boolean(
+                    isFetching && !match.value.winner && match.value.socket,
+                  )}
+                  zIndex={1}
+                  overlayProps={{
+                    blur: 2,
+                    radius: "sm",
+                  }}
+                  loaderProps={{
+                    children: (
+                      <Stack align="center" gap="sm">
+                        <Loader />
+                        <Text visibleFrom="md" size="lg">
+                          Reconnecting...
+                        </Text>
+                        <Text hiddenFrom="md" size="md">
+                          Reconnecting...
+                        </Text>{" "}
+                      </Stack>
+                    ),
+                  }}
+                />
               </Stack>
             </Stack>
           </Center>

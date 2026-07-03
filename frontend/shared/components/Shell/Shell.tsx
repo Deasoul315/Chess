@@ -1,9 +1,22 @@
 "use client";
 
 import SideBar from "@/shared/components/Shell/SideBar";
-import { AppShell, Burger, Stack, Tabs } from "@mantine/core";
+import {
+  ActionIcon,
+  AppShell,
+  Burger,
+  Button,
+  CloseIcon,
+  Flex,
+  Stack,
+  Tabs,
+} from "@mantine/core";
 import { useDisclosure, useMediaQuery } from "@mantine/hooks";
 import {
+  ArrowArcLeftIcon,
+  ArrowLineLeftIcon,
+  CaretLeftIcon,
+  CaretRightIcon,
   GraphIcon,
   HouseIcon,
   LogIcon,
@@ -20,10 +33,14 @@ import UserForm from "../UserSignUpForm";
 import UserSignUpForm from "../UserSignUpForm";
 import UserSignInForm from "../UserSignInForm";
 import { useUserDataContext } from "@/shared/contexts/UserData";
+import { ArrowElbowLeftUpIcon } from "@phosphor-icons/react/dist/ssr";
+import { useAppContext } from "@/shared/contexts/App";
 
 const Shell = ({ children }: { children: React.ReactNode }) => {
   const userData = useUserDataContext();
+  const [isNavbarOpen, { toggle: toggleNavbar }] = useDisclosure(false);
   const isMobile = useMediaQuery("(max-width: 768px)");
+  const app = useAppContext();
   return (
     <AppShell
       padding="md"
@@ -32,11 +49,16 @@ const Shell = ({ children }: { children: React.ReactNode }) => {
       //     padding: "0 20px",
       //   },
       // }}
-      header={{ height: 60 }}
+      transitionDuration={250}
+      header={{ height: 80 }}
       navbar={{
-        width: { base: 40 },
-        breakpoint: 0,
-        collapsed: { mobile: true },
+        width: isNavbarOpen ? "200px" : "95px",
+        // breakpoint: 0,
+        breakpoint: "md",
+        collapsed: {
+          mobile: !app.isOpenSideBar,
+          desktop: isMobile ? true : false,
+        },
       }}
     >
       <AppShell.Header
@@ -96,29 +118,53 @@ const Shell = ({ children }: { children: React.ReactNode }) => {
       </AppShell.Header>
 
       <AppShell.Navbar>
-        <SideBar
-          links={
-            userData.value.userName
-              ? [
-                  { icon: HouseIcon, label: "Home", resource: "/" },
-                  {
-                    icon: MonitorIcon,
-                    label: "Dashboard",
-                    resource: "/dashboard",
-                  },
-                  { icon: PlayIcon, label: "Play", resource: "/play" },
-                  { icon: UserIcon, label: "Account", resource: "/account" },
-                ]
-              : [
-                  { icon: HouseIcon, label: "Home", resource: "/" },
-                  {
-                    icon: MonitorIcon,
-                    label: "Dashboard",
-                    resource: "/dashboard",
-                  },
-                ]
-          }
-        ></SideBar>
+        <Flex pos={"relative"} h={"100%"}>
+          <SideBar
+            isCollapse={!isNavbarOpen}
+            links={
+              userData.value.userName
+                ? [
+                    { icon: HouseIcon, label: "Home", resource: "/" },
+                    {
+                      icon: MonitorIcon,
+                      label: "Dashboard",
+                      resource: "/dashboard",
+                    },
+                    { icon: PlayIcon, label: "Play", resource: "/play" },
+                    {
+                      icon: UserIcon,
+                      label: "Account",
+                      resource: "/account",
+                    },
+                  ]
+                : [
+                    { icon: HouseIcon, label: "Home", resource: "/" },
+                    {
+                      icon: MonitorIcon,
+                      label: "Dashboard",
+                      resource: "/dashboard",
+                    },
+                  ]
+            }
+          ></SideBar>
+          <Stack pos={"relative"} bg={"red"} h={"100%"} visibleFrom="md">
+            <ActionIcon
+              pos={"absolute"}
+              top={"30px"}
+              left={"0px"}
+              bg={"var(--primary)"}
+              onClick={toggleNavbar}
+              size="lg"
+              variant="subtle"
+            >
+              {isNavbarOpen ? (
+                <CaretLeftIcon size={16} />
+              ) : (
+                <CaretRightIcon size={16} />
+              )}
+            </ActionIcon>
+          </Stack>
+        </Flex>
       </AppShell.Navbar>
 
       <AppShell.Main>{children}</AppShell.Main>

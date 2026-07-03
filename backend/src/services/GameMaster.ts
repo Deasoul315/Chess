@@ -168,28 +168,18 @@ export class GameMaster {
       !this._hostRegisterTime ||
       !this._guestRegisterTime ||
       !this._guestTime ||
-      !this._hostTime
+      !this._hostTime ||
+      !this._playerInTurn
     )
       throw "Time cannot be caculated if not initialized";
     if (this._playerInTurn === "GUEST") {
       const elapsedTime = Date.now() - this._guestRegisterTime;
-      console.log({
-        guestTime: this._guestTime,
-        hostTime: this._hostTime,
-        elapsedTime,
-        increment: this.increment,
-      });
+
       this._guestRegisterTime = Date.now();
       this._hostRegisterTime = Date.now();
       this._guestTime = this._guestTime - elapsedTime + this._increment;
     } else {
       const elapsedTime = Date.now() - this._hostRegisterTime;
-      console.log({
-        guestTime: this._guestTime,
-        hostTime: this._hostTime,
-        elapsedTime,
-        increment: this._increment,
-      });
       this._guestRegisterTime = Date.now();
       this._hostRegisterTime = Date.now();
       this._hostTime = this._hostTime - elapsedTime + this._increment;
@@ -235,7 +225,6 @@ export class GameMaster {
       .eq("code", this._code)
       .select()
       .single();
-    console.log("ENDING GAME", this._code, data, error);
     if (error) throw "failed to end game";
   }
   public move(
@@ -320,7 +309,6 @@ export class GameMaster {
     board[toX][toY] = board[fromX][fromY];
     board[fromX][fromY] = null;
     referee = new Referee();
-    // console.log(board);
     const isChecked = referee.isChecked(
       this.playerInTurn === "HOST"
         ? this._hostPlayer.team
@@ -360,7 +348,10 @@ export class GameMaster {
         this.isMoveBoard,
       )
     ) {
-      const winner = this.playerInTurn === "GUEST" ? "HOST" : "GUEST";
+      const winner = this.playerInTurn;
+
+      if (!winner) throw "player in turn not set";
+
       this.endGame(winner);
       logger.warn(`[MOVE_SUCCESS] ${this._winner} wins`, {
         userId,
@@ -394,9 +385,9 @@ export class GameMaster {
 
   public surrender(userId: number) {
     if (this.hostPlayer.id === userId) {
-      this.endGame("HOST");
-    } else {
       this.endGame("GUEST");
+    } else {
+      this.endGame("HOST");
     }
   }
 }

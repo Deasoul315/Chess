@@ -28,7 +28,7 @@ export default function Board({
 
       switch (true) {
         case width < 400:
-          setTileWidth(30);
+          setTileWidth(35);
           break;
         case width < 600:
           setTileWidth(40);
@@ -53,6 +53,63 @@ export default function Board({
       window.removeEventListener("resize", updateTileWidth);
     };
   }, []);
+
+  function placeDropHandle(e: React.MouseEvent<HTMLDivElement>) {
+    if (match.value.winner) return;
+
+    let element: HTMLElement = e.currentTarget;
+    let boardElement = boardElementRef.current;
+
+    if (boardElement) {
+      if (activePieceRef.current) {
+        let element = e.target as HTMLElement;
+        let board = boardElementRef.current;
+        let referee = new Referee();
+        let yCoord = Math.floor(
+          (e.clientX - boardElement.getBoundingClientRect().left) / tileWidth,
+        );
+        let xCoord = Math.floor(
+          (e.clientY - boardElement.getBoundingClientRect().top) / tileWidth,
+        );
+
+        if (team === "BLACK") xCoord = 7 - xCoord;
+        if (
+          location &&
+          referee.canMove(
+            location.x,
+            location.y,
+            xCoord,
+            yCoord,
+            match.value.board,
+            match.value.isMoveBoard,
+          )
+        ) {
+          update(location.x, location.y, xCoord, yCoord);
+          activePieceRef.current = null;
+          setLocation(null);
+          // if (ws && ws.readyState === WebSocket.OPEN) {
+          //   ws.send(JSON.stringify(payload));
+          // }
+        } else {
+          activePieceRef.current = null;
+          setLocation(null);
+        }
+      } else {
+        let y = Math.floor(
+          (e.clientX - boardElement.getBoundingClientRect().left) / tileWidth,
+        );
+        let x = Math.floor(
+          (e.clientY - boardElement.getBoundingClientRect().top) / tileWidth,
+        );
+        if (team === "BLACK") x = 7 - x;
+
+        let piece = chessBoard[x][y];
+        if (!piece || team !== piece.team) return;
+        activePieceRef.current = element;
+        setLocation({ x: x, y: y });
+      }
+    }
+  }
 
   function handleGrabPiece(e: React.MouseEvent<HTMLDivElement>) {
     if (match.value.winner) return;
@@ -92,7 +149,6 @@ export default function Board({
           board.clientWidth + board.getBoundingClientRect().left;
         let maxY: number =
           board.clientHeight + board.getBoundingClientRect().top;
-
         if (e.clientX < minX) {
           element.style.left = `${minX - board.getBoundingClientRect().left - (tileWidth * 1) / 4}px`;
         } else if (e.clientX > maxX) {
@@ -100,7 +156,6 @@ export default function Board({
         } else {
           element.style.left = `${e.clientX - board.getBoundingClientRect().left - (tileWidth * 1) / 2}px`;
         }
-
         if (e.clientY < minY) {
           element.style.top = `${minY - board.getBoundingClientRect().top - (tileWidth * 1) / 4}px`;
         } else if (e.clientY > maxY) {
@@ -115,7 +170,6 @@ export default function Board({
   function handleDropPiece(e: React.MouseEvent<HTMLDivElement>) {
     if (!boardElementRef.current || !activePieceRef.current || !location)
       return;
-
     let element = e.target as HTMLElement;
     let board = boardElementRef.current;
     let referee = new Referee();
@@ -222,13 +276,10 @@ export default function Board({
             height: tileWidth,
           }}
           className={squareColor + " border border-black"}
+          onPointerDown={placeDropHandle}
         >
           {piece && (
-            <div
-              onPointerDown={handleGrabPiece}
-              onPointerMove={handleMovePiece}
-              onPointerUp={handleDropPiece}
-            >
+            <div>
               <Image
                 src={piece.image}
                 width={tileWidth - 0.1 * tileWidth}

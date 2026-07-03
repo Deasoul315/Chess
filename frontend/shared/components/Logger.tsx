@@ -36,7 +36,7 @@ const Logger = ({
   }, [data]);
 
   return (
-    <Paper bg="var(--secondary)" p={10}>
+    <Paper bg="var(--secondary)" p={10} miw={300}>
       <Flex gap="xs" direction={isMobile ? "column" : "row"}>
         <Stack align="center">
           <Title order={isMobile ? 4 : 3}>Host</Title>

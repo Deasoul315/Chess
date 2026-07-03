@@ -1,5 +1,3 @@
-// console.log(await supabase.from("Users").select("*"));
-
 // app.ts
 import express from "express";
 import cors from "cors";
@@ -15,7 +13,7 @@ const app = express();
 app.use(cookieParser());
 app.use(
   cors({
-    origin: ["https://chess-silk-sigma.vercel.app"],
+    origin: ["https://chess-silk-sigma.vercel.app", "https://localhost:3000"],
     credentials: true,
   }),
 );

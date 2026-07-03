@@ -180,16 +180,14 @@ export function makeSocketServer(server: any) {
             }
 
             let found = null;
-
             for (const [, connection] of connections) {
               if (!connection.spectators) continue;
 
               const spectator = connection.spectators.find(
-                (s) => s.userId === userId,
+                (s) => s.userId === id,
               );
 
               if (!spectator) continue;
-
               spectator.socket = ws;
               found = true;
 
@@ -353,7 +351,7 @@ export function makeSocketServer(server: any) {
                   JSON.stringify({
                     type: "MESSAGE",
                     domain: "PRIVATE",
-                    from: targetConn.userName,
+                    from: connection.userName,
                     message: message,
                   }),
                 );

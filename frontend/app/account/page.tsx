@@ -12,6 +12,7 @@ import {
   Stack,
   Notification,
   CheckIcon,
+  Loader,
 } from "@mantine/core";
 import { useForm } from "@mantine/form";
 import { useRouter } from "next/navigation";
@@ -211,9 +212,19 @@ export default function Account() {
               color="primary"
               type="submit"
               mt="sm"
-              fz={{ base: "md", md: "lg" }}
+              size="lg"
+              visibleFrom="md"
             >
-              Save Changes
+              {mutation.isPending ? <Loader /> : "Save Changes"}
+            </Button>
+            <Button
+              color="primary"
+              type="submit"
+              mt="sm"
+              size="md"
+              hiddenFrom="md"
+            >
+              {mutation.isPending ? <Loader /> : "Save Changes"}
             </Button>
           </Stack>
         </form>
