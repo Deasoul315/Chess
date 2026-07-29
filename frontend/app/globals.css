@@ -9,9 +9,9 @@
   /* COLORS */
   --color-text: #fffbff;
   --color-background: #000500;
-  --color-primary: #362417;
+  --color-primary: #b88b4a;
   --color-secondary: #92817a;
-  --color-accent: #f1dabf;
+  --color-accent: #b88b4a;
 }
 
 /* 
@@ -23,9 +23,9 @@
 } */
 
 :root {
-  --primary: #fca311; /* Prussian Blue */
+  --primary: #b88b4a; /* Prussian Blue */
   --secondary: #14213d; /* Alabaster Grey */
-  --accent: #fca311; /* Orange */
+  --accent: #b88b4a; /* Orange */
   --text: #ffffff; /* Black */
   --background: #000000; /* White */
 
@@ -52,16 +52,16 @@
   --mantine-color-body: #ffffff !important;
   --background: #ffffff !important;
   --text: #000000 !important;
-  --primary: #fca311 !important;
+  --primary: #b88b4a !important;
   --secondary: #567ccf !important;
-  --accent: #fca311 !important;
+  --accent: #b88b4a !important;
 }
 
 [data-mantine-color-scheme="dark"] body {
   --mantine-color-body: #000000 !important;
   --background: #000000 !important;
-  --primary: #fca311 !important; /* Prussian Blue */
+  --primary: #b88b4a !important; /* Prussian Blue */
   --secondary: #14213d !important; /* Alabaster Grey */
-  --accent: #fca311 !important; /* Orange */
+  --accent: #b88b4a !important; /* Orange */
   --text: #ffffff !important; /* Black */
 }

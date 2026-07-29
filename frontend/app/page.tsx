@@ -385,14 +385,6 @@ const Home = () => {
               lh={"1.1"}
             >
               Chess{" "}
-              <Paper
-                bg="var(--primary)"
-                display={"inline"}
-                c={"var(--background)"}
-                px={"xs"}
-              >
-                hub
-              </Paper>
             </Title>
             <Title
               ta={"center"}
@@ -494,7 +486,7 @@ const Home = () => {
       <Grid
         style={{
           background:
-            "linear-gradient(90deg,rgba(252, 163, 17, 0.01) 0%, rgba(252, 163, 17, 1) 25%, rgba(252, 163, 17, 1) 50%, rgba(252, 163, 17, 1) 75%, rgba(252, 163, 17, 0.01) 100%)",
+            "linear-gradient(  90deg,  rgba(184, 139, 74, 0.01) 0%,  rgba(184, 139, 74, 1) 25%,  rgba(184, 139, 74, 1) 50%,  rgba(184, 139, 74, 1) 75%,  rgba(184, 139, 74, 0.01) 100%)",
         }}
       >
         <Grid.Col span={{ base: 12, sm: 6, lg: 3 }}>

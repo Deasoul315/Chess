@@ -20,16 +20,16 @@ export const AGATE_GROTESK = localFont({
 export const theme = createTheme({
   colors: {
     primary: [
-      "#fca311",
-      "#fca311",
-      "#fca311",
-      "#fca311",
-      "#fca311", // shade 4
-      "#fca311",
-      "#fca311",
-      "#fca311",
-      "#fca311",
-      "#fca311",
+      "#b88b4a",
+      "#b88b4a",
+      "#b88b4a",
+      "#b88b4a",
+      "#b88b4a", // shade 4
+      "#b88b4a",
+      "#b88b4a",
+      "#b88b4a",
+      "#b88b4a",
+      "#b88b4a",
     ],
 
     secondary: [
