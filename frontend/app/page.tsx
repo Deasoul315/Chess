@@ -411,15 +411,7 @@ const Home = () => {
               id="title"
               lh={"1.1"}
             >
-              Never Forget Your{" "}
-              <Paper
-                bg="var(--primary)"
-                display={"inline"}
-                c={"var(--background)"}
-                px={"xs"}
-              >
-                Openings
-              </Paper>
+              Never Forget Your Openings{" "}
             </Title>
             <Title
               ta={"center"}
